@@ -1,5 +1,6 @@
 # Data (too large for git)
 data/
+!data/processed/merged/dataset.csv
 
 # Environment
 .env
