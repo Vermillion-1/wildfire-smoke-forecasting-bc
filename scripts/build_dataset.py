@@ -34,9 +34,14 @@ FIRE_LAGS = [0, 1, 2, 3]
 
 
 def load_air_quality() -> pd.DataFrame:
-    """Load processed daily air quality data."""
+    """Load processed daily air quality data (BC Gov PM2.5)."""
     aq_dir = PROCESSED_DIR / "air_quality"
-    files = sorted(aq_dir.glob("vancouver_aq_daily_*.csv"))
+
+    # Prefer BC Gov PM2.5 data (vancouver_pm25_daily_*.csv)
+    files = sorted(aq_dir.glob("vancouver_pm25_daily_*.csv"))
+    if not files:
+        # Fall back to older OpenAQ format
+        files = sorted(aq_dir.glob("vancouver_aq_daily_*.csv"))
 
     if not files:
         print("No air quality files found")
@@ -46,6 +51,10 @@ def load_air_quality() -> pd.DataFrame:
     df = pd.concat(dfs, ignore_index=True)
     df["date"] = pd.to_datetime(df["date"])
     df = df.drop_duplicates(subset=["date"]).sort_values("date").reset_index(drop=True)
+
+    # Standardize column name: use pm25_mean as the primary target
+    if "pm25_mean" in df.columns and "pm25" not in df.columns:
+        df.rename(columns={"pm25_mean": "pm25"}, inplace=True)
 
     print(f"Air quality: {len(df)} days, {df['date'].min().date()} to {df['date'].max().date()}")
     return df
