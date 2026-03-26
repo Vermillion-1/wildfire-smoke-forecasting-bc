@@ -12,6 +12,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from math import asin, cos, radians, sin, sqrt
+from typing import Optional
 
 import pandas as pd
 import requests
@@ -45,14 +46,14 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * c
 
 
-def download_year(year: int, sensor: str = "VIIRS") -> Path:
+def download_year(year: int, sensor: str = "VIIRS") -> Optional[Path]:
     """Download fire data for a specific year and sensor."""
     # Validate year ranges
     if sensor == "VIIRS" and year < 2012:
-        print(f"Error: VIIRS data not available before 2012")
+        print("Error: VIIRS data not available before 2012")
         return None
     if sensor == "MODIS" and year < 2000:
-        print(f"Error: MODIS data not available before 2000")
+        print("Error: MODIS data not available before 2000")
         return None
 
     # Build URL and filename

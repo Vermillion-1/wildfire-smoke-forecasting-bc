@@ -13,7 +13,6 @@ Usage:
 import argparse
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 # Directories
@@ -33,22 +32,28 @@ PM25_LAGS = [1, 2, 3, 7]
 FIRE_LAGS = [0, 1, 2, 3]
 
 
+def select_latest_file(files: list[Path]) -> Path | None:
+    """Select the latest file by lexical filename ordering."""
+    if not files:
+        return None
+    return sorted(files)[-1]
+
+
 def load_air_quality() -> pd.DataFrame:
     """Load processed daily air quality data (BC Gov PM2.5)."""
     aq_dir = PROCESSED_DIR / "air_quality"
 
-    # Prefer BC Gov PM2.5 data (vancouver_pm25_daily_*.csv)
-    files = sorted(aq_dir.glob("vancouver_pm25_daily_*.csv"))
-    if not files:
+    # Prefer BC Gov PM2.5 data (single latest export)
+    file = select_latest_file(list(aq_dir.glob("vancouver_pm25_daily_*.csv")))
+    if file is None:
         # Fall back to older OpenAQ format
-        files = sorted(aq_dir.glob("vancouver_aq_daily_*.csv"))
+        file = select_latest_file(list(aq_dir.glob("vancouver_aq_daily_*.csv")))
 
-    if not files:
+    if file is None:
         print("No air quality files found")
         return pd.DataFrame()
 
-    dfs = [pd.read_csv(f) for f in files]
-    df = pd.concat(dfs, ignore_index=True)
+    df = pd.read_csv(file)
     df["date"] = pd.to_datetime(df["date"])
     df = df.drop_duplicates(subset=["date"]).sort_values("date").reset_index(drop=True)
 
@@ -56,6 +61,11 @@ def load_air_quality() -> pd.DataFrame:
     if "pm25_mean" in df.columns and "pm25" not in df.columns:
         df.rename(columns={"pm25_mean": "pm25"}, inplace=True)
 
+    if "pm25" not in df.columns:
+        print(f"Air quality file missing required 'pm25' column: {file}")
+        return pd.DataFrame()
+
+    print(f"Air quality source: {file.name}")
     print(f"Air quality: {len(df)} days, {df['date'].min().date()} to {df['date'].max().date()}")
     return df
 
@@ -131,17 +141,17 @@ def load_fire_data(max_distance_km: int = 1000) -> pd.DataFrame:
 def load_weather() -> pd.DataFrame:
     """Load processed daily weather data."""
     weather_dir = PROCESSED_DIR / "weather"
-    files = sorted(weather_dir.glob("vancouver_weather_daily_*.csv"))
+    file = select_latest_file(list(weather_dir.glob("vancouver_weather_daily_*.csv")))
 
-    if not files:
+    if file is None:
         print("No weather files found")
         return pd.DataFrame()
 
-    dfs = [pd.read_csv(f) for f in files]
-    df = pd.concat(dfs, ignore_index=True)
+    df = pd.read_csv(file)
     df["date"] = pd.to_datetime(df["date"])
     df = df.drop_duplicates(subset=["date"]).sort_values("date").reset_index(drop=True)
 
+    print(f"Weather source: {file.name}")
     print(f"Weather: {len(df)} days, {df['date'].min().date()} to {df['date'].max().date()}")
     return df
 
@@ -194,7 +204,7 @@ def build_dataset(max_distance_km: int = 1000) -> pd.DataFrame:
     weather = load_weather()
 
     if aq.empty:
-        print("\nError: Air quality data is required. Run download_air_quality.py first.")
+        print("\nError: Air quality data is required. Run download_bc_air_quality.py first.")
         return pd.DataFrame()
 
     # Start with air quality as the base (it defines our target variable)
