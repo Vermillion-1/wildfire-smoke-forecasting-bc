@@ -2,7 +2,7 @@
 
 **Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)**
 
-CMPT 733 — Big Data Lab II | Simon Fraser University
+CMPT 733: Big Data Lab II | Simon Fraser University
 
 ---
 
