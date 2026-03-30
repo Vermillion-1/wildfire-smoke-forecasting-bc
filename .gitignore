@@ -19,3 +19,12 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+
+# Claude Code
+.claude/
+
+# Non-essential scripts
+scripts/generate_presentation.py
+
+# Binary presentation files
+docs/*.pptx

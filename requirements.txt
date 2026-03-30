@@ -9,3 +9,5 @@ seaborn
 streamlit
 plotly
 jupyter
+xgboost
+lightgbm

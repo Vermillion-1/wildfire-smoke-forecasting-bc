@@ -32,10 +32,35 @@ PM25_LAGS = [1, 2, 3, 7]
 FIRE_LAGS = [0, 1, 2, 3]
 
 
-def select_latest_file(files: list[Path]) -> Path | None:
-    """Select the latest file by lexical filename ordering."""
+def parse_date_range(filename: str) -> tuple[str, str] | None:
+    """Extract start and end dates from filename like 'name_20000101_20251231.csv'."""
+    import re
+    match = re.search(r'(\d{8})_(\d{8})', filename)
+    if match:
+        return match.group(1), match.group(2)
+    return None
+
+
+def select_widest_range_file(files: list[Path]) -> Path | None:
+    """Select the file with the widest date range (most days covered)."""
     if not files:
         return None
+    
+    best_file = None
+    best_span = 0
+    
+    for f in files:
+        dates = parse_date_range(f.name)
+        if dates:
+            start, end = dates
+            span = int(end) - int(start)
+            if span > best_span:
+                best_span = span
+                best_file = f
+    
+    if best_file:
+        return best_file
+    
     return sorted(files)[-1]
 
 
@@ -43,11 +68,9 @@ def load_air_quality() -> pd.DataFrame:
     """Load processed daily air quality data (BC Gov PM2.5)."""
     aq_dir = PROCESSED_DIR / "air_quality"
 
-    # Prefer BC Gov PM2.5 data (single latest export)
-    file = select_latest_file(list(aq_dir.glob("vancouver_pm25_daily_*.csv")))
+    file = select_widest_range_file(list(aq_dir.glob("vancouver_pm25_daily_*.csv")))
     if file is None:
-        # Fall back to older OpenAQ format
-        file = select_latest_file(list(aq_dir.glob("vancouver_aq_daily_*.csv")))
+        file = select_widest_range_file(list(aq_dir.glob("vancouver_aq_daily_*.csv")))
 
     if file is None:
         print("No air quality files found")
@@ -141,7 +164,7 @@ def load_fire_data(max_distance_km: int = 1000) -> pd.DataFrame:
 def load_weather() -> pd.DataFrame:
     """Load processed daily weather data."""
     weather_dir = PROCESSED_DIR / "weather"
-    file = select_latest_file(list(weather_dir.glob("vancouver_weather_daily_*.csv")))
+    file = select_widest_range_file(list(weather_dir.glob("vancouver_weather_daily_*.csv")))
 
     if file is None:
         print("No weather files found")
