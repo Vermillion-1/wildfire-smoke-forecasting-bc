@@ -30,7 +30,7 @@ Key finding: The persistence baseline (tomorrow = today) outperforms all ML mode
 ├── docs/
 │   ├── report.md                 # Full academic report
 │   ├── detailed_walkthrough.md   # Verified end-to-end walkthrough
-│   └── presentation.pptx         # Slide deck
+│   └── milestone_presentation_material.md
 ├── figures/                      # Generated visualizations (20 PNGs)
 ├── notebooks/
 │   ├── 01_eda.ipynb              # EDA & seasonal risk profiling (RQ3)
@@ -137,8 +137,8 @@ The interactive dashboard (`app/streamlit_app.py`) provides 7 tabs:
 
 ## Documentation
 
-- [`docs/report.md`](docs/report.md) — Full academic report with methodology, results, and discussion
-- [`docs/detailed_walkthrough.md`](docs/detailed_walkthrough.md) — Verified end-to-end walkthrough of the pipeline and all outputs
+- [`../docs/report.md`](../docs/report.md) — Full academic report with methodology, results, and discussion
+- [`../docs/detailed_walkthrough.md`](../docs/detailed_walkthrough.md) — Verified end-to-end walkthrough of the pipeline and all outputs
 
 ---
 

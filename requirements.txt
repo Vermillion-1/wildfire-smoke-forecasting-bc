@@ -4,10 +4,17 @@ requests
 tqdm
 python-dotenv
 scikit-learn
+scipy
 matplotlib
 seaborn
 streamlit
 plotly
 jupyter
+nbformat
+python-pptx
+lxml
 xgboost
 lightgbm
+imbalanced-learn
+optuna
+torch

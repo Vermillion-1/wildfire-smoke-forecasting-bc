@@ -169,13 +169,14 @@ CMPT 733 — Big Data Lab II
 
 | Member | Contribution |
 |---|---|
-| [Member B] | [TBD] |
-| [Member C] | [TBD] |
-| [Member D] | [TBD] |
+| Member 1 | Data collection and preprocessing |
+| Member 2 | EDA and trend analysis |
+| Member 3 | Lag analysis and modeling |
+| Member 4 | Dashboard and presentation prep |
 
 ### What to say
 
-> "Briefly on roles: Dhwani led the exploratory data analysis and the smoke arrival lag investigation. [Member B] handled [X]. [Member C] handled [Y]. [Member D] handled [Z]. We collaborate on analysis decisions and review each other's work."
+> "Briefly on roles: present one concrete contribution per member tied to repo commits. For example, one member led data ingestion, another led EDA, another led modeling, and another led dashboard + presentation. We collaborate on analysis decisions and review each other's work."
 
 ---
 

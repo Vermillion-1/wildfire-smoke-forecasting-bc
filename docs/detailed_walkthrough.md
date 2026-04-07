@@ -18,15 +18,28 @@ Current verified scope (from the active dataset and notebooks):
 
 ## 2) Repository Structure (What Matters Most)
 
+**Data pipeline:**
 - `scripts/download_bc_air_quality.py`: downloads/filters Metro Vancouver PM2.5 from BC FTP, outputs daily PM2.5 files.
 - `scripts/download_historical_fires.py`: downloads NASA FIRMS fire CSVs, filters BC bbox, adds distance to Vancouver, writes processed fire files.
 - `scripts/download_weather.py`: calls Open-Meteo, aggregates hourly to daily weather, adds derived weather features.
 - `scripts/build_dataset.py`: merges AQ + fire + weather, creates lag and calendar features, writes `dataset.csv`.
+
+**Notebooks (Phase 1 analysis):**
 - `notebooks/01_eda.ipynb`: exploratory analysis and smoke-season profiling (RQ3).
 - `notebooks/02_lag_analysis.ipynb`: cross-correlation + lag analysis (RQ2).
 - `notebooks/03_modeling.ipynb`: forecasting baselines and ML models (RQ1), plus holdout validation.
+
+**Phase 2 modeling scripts (smoke-day specialisation):**
+- `scripts/test_residual_model.py`: LightGBM on pm25_diff — the core residual framing experiment.
+- `scripts/train_asymmetric_loss.py`: quantile regression sweep (Q=0.75–0.95) + alternative losses.
+- `scripts/train_fire_subset.py`: best smoke-day model — Q=0.80 with fire-only 24 features.
+- `scripts/train_smoke_detector.py`: XGBoost binary smoke-day classifier (AUPRC=0.331, 8/13 episodes).
+- See `docs/experiment_results.md` for full Phase 2 documentation.
+
+**App and docs:**
 - `app/streamlit_app.py`: dashboard with 7 tabs.
-- `docs/report.md`: academic report (updated for consistency).
+- `docs/report.md`: full academic report covering both phases.
+- `docs/experiment_results.md`: detailed results for all 9 Phase 2 experiments.
 
 ## 3) Data Pipeline (End-to-End)
 
@@ -255,7 +268,60 @@ Notes:
 Presentation notes:
 - `docs/milestone_presentation_material.md` is intentionally milestone-era content and not used as the final report baseline.
 
-## 9) Reproduce Verified State
+## 9) Phase 2 Modeling — Smoke-Day Specialisation
+
+Phase 1 (`03_modeling.ipynb`) confirmed persistence beats all standard ML models overall but fails on smoke days (MAE = 22.11). A second phase of nine experiments in `scripts/` specifically targets this.
+
+### 9.1 Core Finding
+
+**Residual framing** (predicting `pm25_diff` = tomorrow − today instead of raw PM2.5) is the single most important architectural change. It converts the autocorrelated series into a near-stationary regression problem and bakes persistence in as the implicit prior.
+
+**Quantile regression at Q=0.80** layered on residual framing pushes the model to predict the 80th percentile of next-day change — penalising under-prediction 4× more than over-prediction. Combined with a **fire-only 24-feature set** (dropping temperature, pressure, humidity which dominate clean days), this achieves:
+
+- Smoke-day MAE: **21.729** vs. persistence **22.353** (Δ = +0.624 µg/m³)
+- Overall MAE: 2.075 (worse than persistence's 1.668 — expected tradeoff)
+
+### 9.2 Full Experiment Results Summary
+
+| Script | Model | Overall MAE | Smoke-day MAE | Smoke Δ | Status |
+|---|---|---|---|---|---|
+| `test_residual_model.py` | LightGBM MAE (residual) | 1.504 | 22.181 | +0.172 | ✓ |
+| `test_refined_residual.py` | LightGBM MAE + 38 features | ~1.48 | ~22.18 | +0.17 | ✓ |
+| `train_asymmetric_loss.py` | Q=0.75 | 1.852 | 21.813 | +0.540 | ✓ |
+| `train_asymmetric_loss.py` | **Q=0.80 (balanced)** | **1.995** | **21.760** | **+0.593** | ✓ |
+| `train_asymmetric_loss.py` | Q=0.90 | 2.521 | 21.391 | +0.962 | ✓ |
+| `train_residual_correction.py` | MAE + Layer 2 (p80) | 1.509 | 22.055 | +0.298 | ✓ |
+| `train_soft_blend.py` | Calib blend Q=0.80 (p²) | 1.507 | 21.965 | +0.388 | ✓ |
+| `train_fire_subset.py` | **Q=0.80 fire-only 24 feat** | **2.075** | **21.729** | **+0.624** | ✓ Best |
+| `train_smoke_detector.py` | XGBoost gate | AUPRC=0.331 | 8/13 episodes | — | ✓ |
+| `train_asymmetric_loss.py` | Sample-weighted 20× | 1.623 | 23.274 | −0.921 | ✗ |
+| `train_hurdle_model.py` | Hurdle model | 1.813 | 24.164 | −1.2% | ✗ |
+| `train_lstm.py` | LSTM (PyTorch) | 2.342 | — | −27% | ✗ Negative |
+| `tune_residual_model.py` | Optuna 30 trials | 1.713 | 21.880 | +0.473 | — Defaults better |
+
+### 9.3 XGBoost Gate Episode Analysis
+
+The gate catches 8 of 13 unique episodes. The 5 missed have structural root causes:
+
+| Episode | Root Cause |
+|---|---|
+| 2005-09-12 (1 day) | Pre-2010, sparse training data — structural |
+| 2017-08-01–08-10 (10 days) | Distant fires only (mean 350km), no close signal |
+| 2018-08-12–08-14 (3 days) | Fast onset — fire jumped on Day 2, gate sees Day 0 |
+| **2020-09-10–09-17 (8 days)** | **Oregon/California Labor Day fires. fire_count_total = 0, pm25 = 65–163. Data ceiling.** |
+| 2023-08-19 (1 day) | Single pre-smoke day edge case |
+
+The 2020 miss directly motivates HYSPLIT back-trajectory integration or US VIIRS fire data as future work.
+
+### 9.4 Key Inferences
+
+1. **Residual framing > any loss function.** Direct Q=0.90 without residual framing: smoke-day MAE = 39.650 (−17.3 vs persistence). With residual framing: 21.391 (+0.962).
+2. **Quantile tradeoff is monotone and predictable.** Each +0.05 in alpha costs ~0.3–0.5 overall MAE and buys ~0.2–0.3 smoke-day improvement.
+3. **Sample weighting backfires.** The model learns "elevated PM2.5 keeps rising" but most elevated days don't become smoke days.
+4. **Weather features hurt smoke-day prediction.** They regularise the model toward normal-day behaviour, which is correct most of the time but wrong during fire events.
+5. **LSTM negative.** 9K rows with 46 positive events is far too small for sequence models. Tree models dominate because the key signal (FRP × wind direction) is a multiplicative feature interaction — a single tree split.
+
+## 10) Reproduce Verified State
 
 ```bash
 source venv/bin/activate
@@ -264,4 +330,18 @@ jupyter nbconvert --to notebook --execute notebooks/01_eda.ipynb --inplace --Exe
 jupyter nbconvert --to notebook --execute notebooks/02_lag_analysis.ipynb --inplace --ExecutePreprocessor.kernel_name=vancouver-smoke
 jupyter nbconvert --to notebook --execute notebooks/03_modeling.ipynb --inplace --ExecutePreprocessor.kernel_name=vancouver-smoke
 streamlit run app/streamlit_app.py
+
+# Phase 2 — run from project root
+python scripts/test_residual_model.py
+python scripts/train_asymmetric_loss.py
+python scripts/train_fire_subset.py
+python scripts/train_smoke_detector.py   # requires imbalanced-learn
+python scripts/train_residual_correction.py
+python scripts/train_soft_blend.py
+python scripts/train_hurdle_model.py
+python scripts/analyze_smoke.py
+python scripts/analyze_missed_episodes.py
+# Optional (additional dependencies):
+# python scripts/train_lstm.py           # requires torch
+# python scripts/tune_residual_model.py  # requires optuna
 ```

@@ -86,7 +86,7 @@ Remaining asymptotic improvement limited by data, not models:
 
 ## Rejected Approaches (do not revisit)
 - **SMOGN** — synthetic oversampling violates temporal ordering
-- **CNN+LSTM** — no spatial grid, single station
+- **CNN+LSTM** — no spatial grid, single-city daily aggregate
 - **Transformers / Mamba** — 9K rows insufficient
 - **HMM / GAMs / DLNM / CUSUM / Monte Carlo** — complexity >> payoff
 - **Deterministic offsets / spatiotemporal buffer undersampling** — spatial grid only
@@ -95,4 +95,4 @@ Remaining asymptotic improvement limited by data, not models:
 
 ## RAM-Safe Tips
 - All scripts use LightGBM + XGBoost only — safe to run without closing other apps
-- Run from project root: `cd /Users/ankushsingh/Desktop/CMPT_733/Project`
+- Run from project root: `cd /home/aarish/Documents/Msc/CMPT733/Forest-Fire-Prediction-BC`
