@@ -115,6 +115,10 @@ The non-significant mean trend while extremes worsen is the study's most importa
 
 *Figure 4: Top-20 Random Forest feature importances. PM2.5 lag-1 dominates at ~40%; fire variables rank near zero, explaining why their removal improves performance.*
 
+![Phase 2 smoke day classifier precision-recall curves](../figures/smoke_detector_pr_curves.png)
+
+*Figure 5: Precision-recall curves for Phase 2 binary smoke-day classifiers. AUPRC = 0.331 vs. a random baseline of ~0.005 — a 66x improvement despite only 0.5% positive class rate.*
+
 ---
 
 ## 7. Data Product
@@ -133,7 +137,7 @@ Run with: `pip install -r requirements.txt && streamlit run app/streamlit_app.py
 
 ![Smoke event calendar heatmap](../figures/smoke_event_calendar.png)
 
-*Figure 5: Year × month heatmap of smoke days. Events cluster in August–September and have become more frequent since 2015.*
+*Figure 6: Year × month heatmap of smoke days. Events cluster in August–September and have become more frequent since 2015.*
 
 ---
 
