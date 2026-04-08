@@ -20,6 +20,9 @@ This project integrates daily PM2.5 air quality measurements, NASA MODIS/VIIRS s
 - An XGBoost binary smoke detector catches **8 of 13 historical smoke episodes** (AUPRC = 0.331 vs. random ~0.005).
 - Smoke seasons show statistically significant upward trends in frequency (ρ = 0.480, p = 0.015), peak severity (ρ = 0.648, p = 0.043), and episode duration (ρ = 0.483, p = 0.015) over 2000–2024.
 
+![25-year PM2.5 time series](figures/pm25_timeseries.png)
+*Daily PM2.5 for Metro Vancouver (2000–2025). Smoke episodes (PM2.5 > 25 µg/m³) are highlighted; the September 2020 Oregon/Washington fire event peaked at 163.5 µg/m³.*
+
 ---
 
 ## Repository Structure
@@ -170,6 +173,9 @@ Persistence beats every ML model overall. The dominant signal is PM2.5 lag-1 (~4
 
 Residual framing (predicting the change, not raw PM2.5) is the single most important architectural choice. Quantile regression at Q=0.80 with fire-only features beats persistence on the 46 smoke days while remaining interpretable and deployable.
 
+![Smoke day classifier precision-recall curves](figures/smoke_detector_pr_curves.png)
+*Precision-recall curves for Phase 2 binary smoke-day classifiers. AUPRC = 0.331 vs. a random baseline of ~0.005 — a 66x improvement despite only 0.5% positive class rate.*
+
 ### RQ2 — Smoke Arrival Lag
 
 Cross-correlation peaks at **lag 0** across all distance bands, indicating smoke transport from fire to city occurs within the same calendar day at daily resolution. Adding fire lag features to PM2.5 autoregression improves R² by only 0.012.
@@ -182,6 +188,9 @@ Over 2000–2024: **46 smoke days** across **14 episodes**. Spearman trend tests
 - Episode duration (ρ = 0.483, p = 0.015)
 
 The worst event (September 2020, peak PM2.5 = 163.5 µg/m³) originated from Oregon/Washington fires — the XGBoost gate assigns zero fire activity on this day (`fire_count_total = 0`), confirming this is a data ceiling, not a model ceiling.
+
+![Annual smoke day trends](figures/smoke_season_trends.png)
+*Annual smoke day counts (2000–2024). Frequency, peak severity, and episode duration all show statistically significant upward trends (Spearman ρ = 0.48–0.65, p < 0.05).*
 
 ---
 
