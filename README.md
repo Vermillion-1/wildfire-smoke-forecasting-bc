@@ -1,4 +1,4 @@
-# Forest Fire Prediction BC
+# Vancouver Wildfire Smoke Predictor
 
 **Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)**
 
@@ -32,22 +32,20 @@ This project integrates daily PM2.5 air quality measurements, NASA MODIS/VIIRS s
 │   └── processed/
 │       └── merged/dataset.csv        # Final merged dataset (9,133 x 90)
 ├── docs/
-│   ├── report.md                     # Full academic report (Phase 1 + Phase 2)
+│   ├── report_final.md               # Full academic report (Phase 1 + Phase 2)
 │   ├── experiment_results.md         # Detailed Phase 2 experiment results (9 experiments)
-│   ├── modeling_summary.md           # Concise Phase 2 modeling summary
-│   ├── speaking_notes.md             # 8-minute presentation script + Q&A prep
-│   ├── detailed_walkthrough.md       # Verified end-to-end pipeline walkthrough
-│   └── milestone_presentation_material.md
-├── figures/                          # Generated visualizations
+│   └── modeling_summary.md           # Concise Phase 2 modeling summary
+├── figures/                          # Generated visualizations (22 PNGs)
 ├── notebooks/
 │   ├── 01_eda.ipynb                  # EDA & seasonal risk profiling (RQ3)
 │   ├── 02_lag_analysis.ipynb         # Smoke arrival lag analysis (RQ2)
-│   └── 03_modeling.ipynb             # Predictive modeling Phase 1 (RQ1)
+│   ├── 03_modeling.ipynb             # Predictive modeling Phase 1 (RQ1)
+│   └── 04_smoke_day_modeling.ipynb   # Phase 2 smoke-day specialisation summary
 ├── scripts/
 │   ├── build_dataset.py              # Dataset construction pipeline
-│   ├── download_bc_air_quality.py
-│   ├── download_historical_fires.py
-│   ├── download_weather.py
+│   ├── download_bc_air_quality.py    # BC Ministry of Environment FTP downloader
+│   ├── download_historical_fires.py  # NASA FIRMS MODIS/VIIRS downloader
+│   ├── download_weather.py           # Open-Meteo Historical API downloader
 │   ├── download_all_25years.py       # Bulk 25-year download helper
 │   │
 │   ├── # Phase 2 — Exploratory / Diagnostic
@@ -74,7 +72,6 @@ This project integrates daily PM2.5 air quality measurements, NASA MODIS/VIIRS s
 │   ├── # Phase 2 — Optimisation & Deep Learning
 │   ├── tune_residual_model.py        # Optuna HPO (30 trials) on Q=0.75 model
 │   └── train_lstm.py                 # 2-layer PyTorch LSTM (negative result: −27% vs persistence)
-├── updates/                          # Working directory for Phase 2 development
 └── requirements.txt
 ```
 
@@ -206,11 +203,9 @@ The interactive dashboard (`app/streamlit_app.py`) provides 7 tabs:
 
 | Document | Description |
 |---|---|
-| [`docs/report.md`](docs/report.md) | Full academic report covering Phase 1 and Phase 2 |
+| [`docs/report_final.md`](docs/report_final.md) | Full academic report covering Phase 1 and Phase 2 |
 | [`docs/experiment_results.md`](docs/experiment_results.md) | Detailed results for all 9 Phase 2 experiments |
 | [`docs/modeling_summary.md`](docs/modeling_summary.md) | Concise Phase 2 modeling summary |
-| [`docs/speaking_notes.md`](docs/speaking_notes.md) | 8-minute presentation script + full Q&A prep |
-| [`docs/detailed_walkthrough.md`](docs/detailed_walkthrough.md) | Verified end-to-end pipeline and output walkthrough |
 
 ---
 

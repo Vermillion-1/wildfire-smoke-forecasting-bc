@@ -347,13 +347,13 @@ with st.sidebar:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "🏠 Overview",
-    "🔥 Smoke Season Trends",
-    "⏱️ Smoke Arrival Lag",
-    "📈 PM2.5 Forecasting",
-    "✅ Model Validation",
-    "💡 Health & Planning",
-    "🔍 Data Explorer",
+    "Overview",
+    "Smoke Season Trends",
+    "Smoke Arrival Lag",
+    "PM2.5 Forecasting",
+    "Model Validation",
+    "Health & Planning",
+    "Data Explorer",
 ])
 
 
@@ -1009,42 +1009,42 @@ with tab5:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with tab6:
-    st.header("💡 Health & Planning Guide")
+    st.header("Health & Planning Guide")
     st.markdown(
         "**What does this app offer you?** Actionable insights to protect your health "
         "and plan outdoor activities during wildfire smoke season."
     )
 
     # --- Air Quality Index Categories ---
-    st.subheader("🎨 Air Quality Health Categories")
+    st.subheader("Air Quality Health Categories")
     
     # Define AQI-style categories based on PM2.5
     aq_categories = pd.DataFrame([
-        {"Category": "Good", "PM2.5 Range": "0 - 12", "Color": "🟢", 
-         "Health Impact": "Air quality is satisfactory", 
-         "Outdoor Activity": "✅ All activities safe"},
-        {"Category": "Moderate", "PM2.5 Range": "12 - 25", "Color": "🟡", 
-         "Health Impact": "Acceptable; sensitive individuals may experience issues", 
-         "Outdoor Activity": "✅ Most activities safe"},
-        {"Category": "Unhealthy (Sensitive)", "PM2.5 Range": "25 - 35", "Color": "🟠", 
-         "Health Impact": "Sensitive groups may experience health effects", 
-         "Outdoor Activity": "⚠️ Reduce prolonged outdoor exertion"},
-        {"Category": "Unhealthy", "PM2.5 Range": "35 - 55", "Color": "🔴", 
-         "Health Impact": "Everyone may begin to experience health effects", 
-         "Outdoor Activity": "⚠️ Limit outdoor activities"},
-        {"Category": "Very Unhealthy", "PM2.5 Range": "55 - 150", "Color": "🟣", 
-         "Health Impact": "Health alert: everyone may experience serious effects", 
-         "Outdoor Activity": "❌ Avoid outdoor activities"},
-        {"Category": "Hazardous", "PM2.5 Range": "150+", "Color": "🟤", 
-         "Health Impact": "Health emergency: entire population affected", 
-         "Outdoor Activity": "❌ Stay indoors"},
+        {"Category": "Good", "PM2.5 Range": "0 - 12",
+         "Health Impact": "Air quality is satisfactory",
+         "Outdoor Activity": "All activities safe"},
+        {"Category": "Moderate", "PM2.5 Range": "12 - 25",
+         "Health Impact": "Acceptable; sensitive individuals may experience issues",
+         "Outdoor Activity": "Most activities safe"},
+        {"Category": "Unhealthy (Sensitive)", "PM2.5 Range": "25 - 35",
+         "Health Impact": "Sensitive groups may experience health effects",
+         "Outdoor Activity": "Reduce prolonged outdoor exertion"},
+        {"Category": "Unhealthy", "PM2.5 Range": "35 - 55",
+         "Health Impact": "Everyone may begin to experience health effects",
+         "Outdoor Activity": "Limit outdoor activities"},
+        {"Category": "Very Unhealthy", "PM2.5 Range": "55 - 150",
+         "Health Impact": "Health alert: everyone may experience serious effects",
+         "Outdoor Activity": "Avoid outdoor activities"},
+        {"Category": "Hazardous", "PM2.5 Range": "150+",
+         "Health Impact": "Health emergency: entire population affected",
+         "Outdoor Activity": "Stay indoors"},
     ])
     st.dataframe(aq_categories, width="stretch", hide_index=True)
 
     st.markdown("---")
 
     # --- Current Conditions Assessment ---
-    st.subheader("📊 Recent Conditions Assessment")
+    st.subheader("Recent Conditions Assessment")
     
     # Get most recent data
     recent_df = df.tail(30).copy()
@@ -1055,41 +1055,41 @@ with tab6:
     # Determine category
     def get_category(pm25):
         if pm25 <= 12:
-            return "Good", "🟢", "#28a745"
+            return "Good", "#28a745"
         elif pm25 <= 25:
-            return "Moderate", "🟡", "#ffc107"
+            return "Moderate", "#ffc107"
         elif pm25 <= 35:
-            return "Unhealthy (Sensitive)", "🟠", "#fd7e14"
+            return "Unhealthy (Sensitive)", "#fd7e14"
         elif pm25 <= 55:
-            return "Unhealthy", "🔴", "#dc3545"
+            return "Unhealthy", "#dc3545"
         elif pm25 <= 150:
-            return "Very Unhealthy", "🟣", "#6f42c1"
+            return "Very Unhealthy", "#6f42c1"
         else:
-            return "Hazardous", "🟤", "#6c757d"
-    
-    cat_name, cat_emoji, cat_color = get_category(latest_pm25)
-    
+            return "Hazardous", "#6c757d"
+
+    cat_name, cat_color = get_category(latest_pm25)
+
     col1, col2, col3 = st.columns(3)
-    col1.metric("Latest PM2.5", f"{latest_pm25:.1f} µg/m³", f"{cat_emoji} {cat_name}")
+    col1.metric("Latest PM2.5", f"{latest_pm25:.1f} µg/m³", cat_name)
     col2.metric("Date", f"{latest_date:%Y-%m-%d}")
     col3.metric("30-Day Average", f"{recent_df['pm25'].mean():.1f} µg/m³")
     
     # Activity recommendation
     if latest_pm25 <= 12:
-        st.success("**✅ Great day for outdoor activities!** Air quality is good. Enjoy running, cycling, hiking, or any outdoor exercise.")
+        st.success("**Great day for outdoor activities!** Air quality is good. Enjoy running, cycling, hiking, or any outdoor exercise.")
     elif latest_pm25 <= 25:
-        st.info("**✅ Good conditions for most people.** Unusually sensitive individuals should consider reducing prolonged outdoor exertion.")
+        st.info("**Good conditions for most people.** Unusually sensitive individuals should consider reducing prolonged outdoor exertion.")
     elif latest_pm25 <= 35:
-        st.warning("**⚠️ Sensitive groups should take precautions.** Children, elderly, and those with respiratory conditions should limit prolonged outdoor exertion.")
+        st.warning("**Sensitive groups should take precautions.** Children, elderly, and those with respiratory conditions should limit prolonged outdoor exertion.")
     elif latest_pm25 <= 55:
-        st.warning("**⚠️ Everyone should limit outdoor activities.** Consider indoor exercise alternatives. Keep windows closed.")
+        st.warning("**Everyone should limit outdoor activities.** Consider indoor exercise alternatives. Keep windows closed.")
     else:
-        st.error("**❌ Avoid outdoor activities.** Stay indoors with windows closed. Use air purifiers if available. Wear N95 mask if you must go outside.")
+        st.error("**Avoid outdoor activities.** Stay indoors with windows closed. Use air purifiers if available. Wear N95 mask if you must go outside.")
 
     st.markdown("---")
 
     # --- Smoke Season Calendar ---
-    st.subheader("📅 Vancouver Smoke Season Calendar")
+    st.subheader("Vancouver Smoke Season Calendar")
     st.markdown(
         "Based on the available historical data, here's when smoke events typically occur in Vancouver:"
     )
@@ -1130,35 +1130,35 @@ with tab6:
     st.markdown("---")
 
     # --- Planning Recommendations ---
-    st.subheader("📋 Planning Recommendations")
-    
+    st.subheader("Planning Recommendations")
+
     col_plan1, col_plan2 = st.columns(2)
-    
+
     with col_plan1:
-        st.markdown("**🏃 Outdoor Exercise**")
+        st.markdown("**Outdoor Exercise**")
         st.markdown("""
         - **Best months:** October - June (lowest smoke risk)
         - **Risky months:** July - September (peak fire season)
         - **Check daily:** PM2.5 levels before morning runs
         - **Backup plan:** Have indoor gym access during smoke events
         """)
-        
-        st.markdown("**👶 Children & Schools**")
+
+        st.markdown("**Children & Schools**")
         st.markdown("""
         - Monitor air quality for recess/outdoor PE
         - Keep children indoors when PM2.5 > 25
         - Ensure classrooms have good air filtration
         """)
-    
+
     with col_plan2:
-        st.markdown("**🏕️ Outdoor Events**")
+        st.markdown("**Outdoor Events**")
         st.markdown("""
         - **Weddings/festivals:** Schedule before July or after September
         - **Camping trips:** Have alternate dates or locations ready
         - **Sports tournaments:** Indoor backup venues recommended
         """)
-        
-        st.markdown("**🏠 Home Preparation**")
+
+        st.markdown("**Home Preparation**")
         st.markdown("""
         - Invest in HEPA air purifiers (1 per 500 sq ft)
         - Stock N95/P100 masks for outdoor use
@@ -1169,7 +1169,7 @@ with tab6:
     st.markdown("---")
     
     # --- Historical Context ---
-    st.subheader("📈 Historical Trend: Is It Getting Worse?")
+    st.subheader("Historical Trend: Is It Getting Worse?")
     
     # Yearly smoke days trend
     yearly_smoke = df.groupby("year").apply(
@@ -1206,7 +1206,7 @@ with tab6:
     
     if recent_5yr > early_5yr * 1.5:
         st.warning(
-            f"**⚠️ Smoke events are increasing.** Recent years (2020-2025) average {recent_5yr:.1f} smoke days/year "
+            f"**Smoke events are increasing.** Recent years (2020-2025) average {recent_5yr:.1f} smoke days/year "
             f"compared to {early_5yr:.1f} in early years (2000-2005). Climate change is extending fire seasons."
         )
     else:
