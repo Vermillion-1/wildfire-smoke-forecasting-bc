@@ -14,12 +14,6 @@ This project integrates daily PM2.5 air quality measurements, NASA MODIS/VIIRS s
 2. **RQ2 — Lag Analysis:** What is the delay between BC wildfire activity and elevated PM2.5 in Vancouver?
 3. **RQ3 — Trend Profiling:** How has Vancouver's wildfire smoke season changed from 2000 to 2025?
 
-**Key findings:**
-- The persistence baseline (tomorrow = today) outperforms all standard ML models overall (MAE = 1.694 vs. best ML MAE = 1.783).
-- However, **quantile regression at Q=0.80 with residual framing and a fire-only feature set beats persistence specifically on smoke days** (smoke-day MAE = 21.729 vs. persistence 22.353, Δ = 0.624 µg/m³).
-- An XGBoost binary smoke detector catches **8 of 13 historical smoke episodes** (AUPRC = 0.331 vs. random ~0.005).
-- Smoke seasons show statistically significant upward trends in frequency (ρ = 0.480, p = 0.015), peak severity (ρ = 0.648, p = 0.043), and episode duration (ρ = 0.483, p = 0.015) over 2000–2024.
-
 ![25-year PM2.5 time series](figures/pm25_timeseries.png)
 *Daily PM2.5 for Metro Vancouver (2000–2025). Smoke episodes (PM2.5 > 25 µg/m³) are highlighted; the September 2020 Oregon/Washington fire event peaked at 163.5 µg/m³.*
 
