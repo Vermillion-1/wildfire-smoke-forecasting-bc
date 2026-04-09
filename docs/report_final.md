@@ -1,7 +1,7 @@
 # When the Sky Turns Orange: Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)
 
 **Author:** Aarish Kapila, Ankith Reddy Vemula, Dhwani Patel, Ankush Singh
-**Course:** CMPT 733 — Big Data Lab II, Simon Fraser University
+**Course:** CMPT 733: Big Data Lab II, Simon Fraser University
 **Repository:** [github.com/Vermillion-1/Forest-Fire-Prediction-BC](https://github.com/Vermillion-1/Forest-Fire-Prediction-BC)
 **Dashboard:** `streamlit run app/streamlit_app.py` (local)
 
@@ -15,7 +15,7 @@
 
 ## 2. Motivation and Background
 
-Wildfire smoke is one of the most acute and rapidly worsening air quality threats facing Pacific Northwest cities. Vancouver sits at the intersection of the BC Interior plateau and the western United States — two fire-prone geographies. Short-term PM2.5 exposures above 35 µg/m³ are linked to emergency department visits for asthma and cardiac events. On September 13, 2020, Vancouver recorded a daily mean of **163.5 µg/m³** — nearly seven times the "poor air quality" threshold — as fires in Oregon and Washington sent smoke north across the border. Yet public air quality forecast tools typically provide only coarse, qualitative guidance with no actionable lead time.
+Wildfire smoke is one of the most acute and rapidly worsening air quality threats facing Pacific Northwest cities. Vancouver sits at the intersection of the BC Interior plateau and the western United States, two fire-prone geographies. Short-term PM2.5 exposures above 35 µg/m³ are linked to emergency department visits for asthma and cardiac events. On September 13, 2020, Vancouver recorded a daily mean of **163.5 µg/m³** — nearly seven times the "poor air quality" threshold — as fires in Oregon and Washington sent smoke north across the border. Yet public air quality forecast tools typically provide only coarse, qualitative guidance with no actionable lead time.
 
 Prior work includes NWP systems (e.g., Environment Canada's FireWork model) that couple fire emission inventories with chemical transport models, and statistical/ML approaches — LSTM networks on hourly PM2.5 (Navares & Aznarte, 2021) and random forest models on meteorological reanalysis data (Chen et al., 2019). Both directions struggle with rare extreme events due to class imbalance. This project takes a data-driven approach using 25 years of observational records to answer three questions spanning forecasting, physical process understanding, and long-term trend detection.
 
@@ -166,12 +166,6 @@ This project built a 25-year observational record integrating three independent 
 **RQ3:** Statistically significant upward trends in smoke frequency (ρ = 0.480, p = 0.015), peak severity (ρ = 0.648, p = 0.043), and episode duration (ρ = 0.483, p = 0.015). Mean fire-season PM2.5 does not trend significantly — worsening is concentrated in extremes, consistent with climate change tail amplification.
 
 Future work should prioritise hourly temporal resolution, Pacific Northwest US fire data, and HYSPLIT atmospheric back-trajectory outputs — the three structural ceilings identified by this analysis.
-
----
-
-*Word count: approximately 1,980 words*
-
----
 
 ## References
 
