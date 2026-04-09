@@ -1,8 +1,8 @@
 # When the Sky Turns Orange: Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)
 
-**Author:** Aarish Kapila, ----
+**Author:** Aarish Kapila, Ankith Reddy Vemula, Dhwani Patel, Ankush Singh
 **Course:** CMPT 733 — Big Data Lab II, Simon Fraser University
-**Repository:** [github.com/aarishk/vancouver-wildfire-smoke-predictor](https://github.com/aarishk/vancouver-wildfire-smoke-predictor)
+**Repository:** [github.com/Vermillion-1/Forest-Fire-Prediction-BC](https://github.com/Vermillion-1/Forest-Fire-Prediction-BC)
 **Dashboard:** `streamlit run app/streamlit_app.py` (local)
 
 ---
