@@ -190,6 +190,8 @@ The worst event (September 2020, peak PM2.5 = 163.5 µg/m³) originated from Ore
 
 ## Streamlit Dashboard
 
+> **Note:** The dashboard runs locally. No public deployment is provided. To launch it, follow the setup steps above and run `streamlit run app/streamlit_app.py` from the project root.
+
 The interactive dashboard (`app/streamlit_app.py`) provides 7 tabs:
 
 - **Overview** — Dataset summary and PM2.5 time series
