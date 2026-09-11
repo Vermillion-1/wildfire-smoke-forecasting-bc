@@ -75,11 +75,23 @@ nav.side a.top .num{
 nav.side ol ol a{padding-left:3.05rem; font-size:.805rem}
 nav.side a.active{color:var(--accent); border-left-color:var(--accent); background:var(--accent-soft)}
 .themebtn{
-  margin:1.2rem 1.5rem 0; padding:.44rem .8rem; width:calc(100% - 3rem);
-  background:var(--card); border:1px solid var(--line); border-radius:7px;
-  color:var(--muted); font-size:.8rem; cursor:pointer; font-family:inherit;
+  position:fixed; top:1.15rem; right:1.35rem; z-index:60;
+  width:2.45rem; height:2.45rem; display:flex; align-items:center; justify-content:center;
+  background:var(--card); border:1px solid var(--line); border-radius:50%;
+  color:var(--muted); cursor:pointer; font-family:inherit; padding:0;
+  box-shadow:0 1px 5px rgba(0,0,0,.07); transition:.16s;
 }
-.themebtn:hover{color:var(--fg); border-color:var(--accent)}
+.themebtn:hover{color:var(--accent); border-color:var(--accent); transform:translateY(-1px)}
+.themebtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.themebtn svg{width:1.05rem; height:1.05rem; display:block}
+.themebtn .moon{display:none}
+:root[data-theme="dark"] .themebtn .moon{display:block}
+:root[data-theme="dark"] .themebtn .sun{display:none}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .themebtn .moon{display:block}
+  :root:not([data-theme="light"]) .themebtn .sun{display:none}
+}
+@media(max-width:820px){ .themebtn{top:.7rem; right:.8rem} }
 
 /* ---------- main ---------- */
 main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:3.2rem 3rem 7rem}
@@ -120,7 +132,8 @@ strong{font-weight:625}
 .path a{font-size:.82rem; text-decoration:none; font-weight:560}
 .path a:hover{text-decoration:underline}
 
-.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.8rem; margin:1.8rem 0 2.2rem}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:.8rem; margin:1.8rem 0 2.2rem}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:.95rem 1rem}
 .stat b{display:block; font-size:1.42rem; letter-spacing:-.02em; margin-bottom:.15rem; color:var(--accent)}
 .stat span{font-size:.765rem; color:var(--muted); line-height:1.45; display:block}
@@ -187,6 +200,16 @@ footer p{margin:0 0 .55rem}
 </style>
 </head>
 <body>
+<button class="themebtn" id="themebtn" type="button" aria-label="Toggle light and dark theme" title="Toggle theme">
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/>
+    <path d="M12 2.4v2.2M12 19.4v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.4 12h2.2M19.4 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+  </svg>
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a6.9 6.9 0 0 0 10.7 10.7z"/>
+  </svg>
+</button>
+
 <div class="shell">
 
 <nav class="side">
@@ -195,7 +218,6 @@ footer p{margin:0 0 .55rem}
     <p>Forecasting and profiling smoke impacts on Vancouver's air quality, 2000–2025</p>
   </div>
   <ol>
-    <li><a href="#start" class="top"><span class="num">—</span>Start here</a></li>
     <li><a href="#problem" class="top"><span class="num">1</span>The problem</a>
       <ol>
         <li><a href="#problem-why">Why Vancouver</a></li>
@@ -255,7 +277,6 @@ footer p{margin:0 0 .55rem}
     </li>
     <li><a href="#glossary" class="top"><span class="num">—</span>Glossary</a></li>
   </ol>
-  <button class="themebtn" id="themebtn">Switch theme</button>
 </nav>
 
 <main>
@@ -270,44 +291,6 @@ footer p{margin:0 0 .55rem}
     <span>9,133 days · 2000–2025</span>
     <span>Python · scikit-learn · LightGBM · XGBoost · Streamlit</span>
   </div>
-</div>
-
-<!-- ============ START HERE ============ -->
-<section id="start">
-<h2><span class="num">Orientation</span>Start here</h2>
-
-<p>This page is written to be read top to bottom by someone who has never seen the project, and to be
-jumped around by someone who already knows the domain. The chapters follow the order the work
-actually happened: build the record, look at it, then try to predict it.</p>
-
-<div class="paths">
-  <div class="path">
-    <h4>New to the project</h4>
-    <p>Read straight through. Every unfamiliar term is explained in a purple box the first time it
-    appears, and defined again in the glossary.</p>
-    <a href="#problem">Begin at chapter 1 →</a>
-  </div>
-  <div class="path">
-    <h4>You know ML, not this domain</h4>
-    <p>Chapter 2 explains where the data comes from and what it structurally cannot see — which turns
-    out to bound every result.</p>
-    <a href="#data">Jump to the data →</a>
-  </div>
-  <div class="path">
-    <h4>You want the modelling</h4>
-    <p>The headline is that a one-line baseline beats ten trained models, and why that is a finding
-    rather than a failure.</p>
-    <a href="#rq1a">Jump to RQ1 →</a>
-  </div>
-  <div class="path">
-    <h4>You're evaluating rigour</h4>
-    <p>Chapter 9 covers a finding that reversed when the record was extended. Chapter 10 is the
-    unvarnished limitations list.</p>
-    <a href="#lesson">Jump to the honest part →</a>
-  </div>
-</div>
-
-<h3>The result in six numbers</h3>
 <div class="stats">
   <div class="stat"><b>9,133</b><span>daily records, zero missing days</span></div>
   <div class="stat"><b>46</b><span>smoke days in 25 years — 0.5%</span></div>
@@ -326,7 +309,7 @@ by one day. Chapter 7 describes what it takes to beat it there: predict the <em>
 than the level, penalise under-prediction asymmetrically, and drop the weather features that anchor
 the model to normal conditions.</p>
 </div>
-</section>
+</div>
 
 <!-- ============ 1. PROBLEM ============ -->
 <section id="problem">
