@@ -4,7 +4,7 @@
 
 CMPT 733: Big Data Lab II | Simon Fraser University
 
-📖 **[Read the full technical documentation →](https://vermillion-1.github.io/Forest-Fire-Prediction-BC/)**  
+📖 **[Read the full technical documentation →](https://vermillion-1.github.io/wildfire-smoke-forecasting-bc/)**  
 <sub>Data pipeline, feature engineering, all three research questions, the modelling experiments and known limitations — with diagrams and dashboard screenshots.</sub>
 
 ---

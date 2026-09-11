@@ -1,7 +1,7 @@
 # When the Sky Turns Orange: Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)
 
 **Course:** CMPT 733: Big Data Lab II, Simon Fraser University (group project)
-**Repository:** [github.com/Vermillion-1/Forest-Fire-Prediction-BC](https://github.com/Vermillion-1/Forest-Fire-Prediction-BC)
+**Repository:** [github.com/Vermillion-1/wildfire-smoke-forecasting-bc](https://github.com/Vermillion-1/wildfire-smoke-forecasting-bc)
 **Dashboard:** `streamlit run app/streamlit_app.py` (local)
 
 ---
