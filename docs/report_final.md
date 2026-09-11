@@ -1,7 +1,6 @@
 # When the Sky Turns Orange: Predicting and Profiling Wildfire Smoke Impacts on Vancouver's Air Quality (2000–2025)
 
-**Author:** Aarish Kapila, Ankith Reddy Vemula, Dhwani Patel, Ankush Singh
-**Course:** CMPT 733: Big Data Lab II, Simon Fraser University
+**Course:** CMPT 733: Big Data Lab II, Simon Fraser University (group project)
 **Repository:** [github.com/Vermillion-1/Forest-Fire-Prediction-BC](https://github.com/Vermillion-1/Forest-Fire-Prediction-BC)
 **Dashboard:** `streamlit run app/streamlit_app.py` (local)
 
@@ -15,7 +14,7 @@
 
 ## 2. Motivation and Background
 
-Wildfire smoke is one of the most acute and rapidly worsening air quality threats facing Pacific Northwest cities. Vancouver sits at the intersection of the BC Interior plateau and the western United States, two fire-prone geographies. Short-term PM2.5 exposures above 35 µg/m³ are linked to emergency department visits for asthma and cardiac events. On September 13, 2020, Vancouver recorded a daily mean of **163.5 µg/m³** — nearly seven times the "poor air quality" threshold — as fires in Oregon and Washington sent smoke north across the border. Yet public air quality forecast tools typically provide only coarse, qualitative guidance with no actionable lead time.
+Wildfire smoke is one of the most acute and rapidly worsening air quality threats facing Pacific Northwest cities. Vancouver sits at the intersection of the BC Interior plateau and the western United States, two fire-prone geographies. Short-term PM2.5 exposures above 35 µg/m³ are linked to emergency department visits for asthma and cardiac events. On September 14, 2020, Vancouver recorded a daily mean of **163.5 µg/m³** — nearly seven times the "poor air quality" threshold — as fires in Oregon and Washington sent smoke north across the border. Yet public air quality forecast tools typically provide only coarse, qualitative guidance with no actionable lead time.
 
 Prior work includes NWP systems (e.g., Environment Canada's FireWork model) that couple fire emission inventories with chemical transport models, and statistical/ML approaches — LSTM networks on hourly PM2.5 (Navares & Aznarte, 2021) and random forest models on meteorological reanalysis data (Chen et al., 2019). Both directions struggle with rare extreme events due to class imbalance. This project takes a data-driven approach using 25 years of observational records to answer three questions spanning forecasting, physical process understanding, and long-term trend detection.
 
@@ -27,7 +26,7 @@ Prior work includes NWP systems (e.g., Environment Canada's FireWork model) that
 
 **RQ2 (Smoke Arrival Lag):** What is the typical delay between BC wildfire activity and elevated PM2.5 in Vancouver? Challenges include: (i) daily resolution may be too coarse for sub-day transport; (ii) fire–PM2.5 correlations are confounded by shared meteorological drivers; (iii) the most extreme events originate from cross-border US fires absent from BC-only satellite data.
 
-**RQ3 (Seasonal Trends):** How has Vancouver's smoke season changed from 2000 to 2024? This requires non-parametric statistical tests given the non-normal distribution of annual smoke metrics and only 24 yearly observations.
+**RQ3 (Seasonal Trends):** How has Vancouver's smoke season changed from 2000 to 2024? This requires non-parametric statistical tests given the non-normal distribution of annual smoke metrics and only 25 yearly observations (2000–2024 inclusive; the dataset's single 2025 day cannot support an annual trend point).
 
 ---
 
@@ -41,7 +40,7 @@ Prior work includes NWP systems (e.g., Environment Canada's FireWork model) that
 
 | Group | Features | Rationale |
 |---|---|---|
-| PM2.5 Autoregressive | lags 1, 2, 3, 7 days | Strong temporal persistence (r=0.82 at lag 1) |
+| PM2.5 Autoregressive | lags 1, 2, 3, 7 days | Strong temporal persistence (r=0.80 at lag 1) |
 | Fire Same-Day | count + FRP per Close/Medium/Far/Total band | Concurrent fire activity |
 | Fire Lagged | lags 1–3 for total and close/medium bands | Delayed smoke transport |
 | Wind Components | U (eastward) + V (northward) decomposition | Encodes direction without circular discontinuity |
@@ -49,7 +48,7 @@ Prior work includes NWP systems (e.g., Environment Canada's FireWork model) that
 
 Wind is decomposed into orthogonal U/V vectors rather than raw angle to avoid circular discontinuities at 0°/360°.
 
-**Stage 4 — Analysis.** Three Jupyter notebooks address the RQs sequentially (`01_eda.ipynb`, `02_lag_analysis.ipynb`, `03_modeling.ipynb`), with 14 Phase 2 scripts in `scripts/` extending the work to quantile regression, residual framing, and smoke classification.
+**Stage 4 — Analysis.** Three Jupyter notebooks address the RQs sequentially (`01_eda.ipynb`, `02_lag_analysis.ipynb`, `03_modeling.ipynb`), with 13 Phase 2 scripts in `scripts/` extending the work to quantile regression, residual framing, and smoke classification.
 
 **Stage 5 — Deployment.** Results are exposed through an interactive Streamlit dashboard with seven thematic tabs and `@st.cache_data` on all expensive computations.
 
@@ -61,7 +60,7 @@ Wind is decomposed into orthogonal U/V vectors rather than raw angle to avoid ci
 
 ## 5. Methodology
 
-**Trend Analysis (RQ3).** Spearman rank correlation (ρ) was chosen over Pearson because annual smoke counts are non-normally distributed and we are testing for monotonic trends. With n = 24 observations, α = 0.05 was applied. Mann-Whitney U tests compared weather between smoke and non-smoke days without normality assumptions.
+**Trend Analysis (RQ3).** Spearman rank correlation (ρ) was chosen over Pearson because annual smoke counts are non-normally distributed and we are testing for monotonic trends. α = 0.05 was applied. Note that the four trend tests do not share a sample definition: smoke-day frequency, episode duration (annual maximum) and fire-season mean PM2.5 are computed over all **n = 25** years 2000–2024 with non-event years zero-filled, whereas peak episode severity is computed over only the **n = 10** years that actually contain an episode. The severity test is therefore the least powerful of the four, which is consistent with it returning the weakest p-value. No multiple-comparison correction was applied; under Holm correction the peak-severity result (p = 0.043) would not survive, while the frequency result (p = 0.015) would. Mann-Whitney U tests compared weather between smoke and non-smoke days without normality assumptions.
 
 **Lag Analysis (RQ2).** Cross-correlation between deseasonalised fire activity and PM2.5 was computed at lags −7 to +14 days, restricted to fire season (June–September). A lagged OLS regression decomposition quantified incremental R² contributions of PM2.5 lags, fire lags, and weather features independently.
 
@@ -82,7 +81,11 @@ Wind is decomposed into orthogonal U/V vectors rather than raw angle to avoid ci
 
 *Fire-Only Feature Subset* — removing weather features that predict normal days but add noise during fire events. A 24-feature set (PM2.5 lags, fire FRP/count bands, wind vectors) achieves smoke-day MAE = **21.729**, beating persistence (22.353) by **Δ = 0.624 µg/m³**.
 
-*Smoke Classification* — XGBoost with SMOTE oversampling achieves **AUPRC = 0.331** (random baseline ≈ 0.005), catching **8 of 13 historical episodes** (62% recall). Missed episodes have interpretable root causes: September 2020 had `fire_count_total = 0` in BC data because fires originated in Oregon/California — a data ceiling, not a model ceiling.
+*Smoke Classification* — XGBoost with `scale_pos_weight` imbalance weighting achieves a mean per-fold
+**AUPRC = 0.331** (random baseline ≈ 0.006), catching **8 of 13 historical episodes** (62% recall).
+Pooling all out-of-fold predictions into a single precision-recall curve gives AP = 0.239 — the
+per-fold mean is the higher of the two because later folds, which contain the severe post-2017
+events, are counted in several overlapping test windows. Both numbers are reported in Figure 5. Missed episodes have interpretable root causes: September 2020 had `fire_count_total = 0` in BC data because fires originated in Oregon/California — a data ceiling, not a model ceiling.
 
 ![Cross-correlation: FRP vs PM2.5 by distance band](../figures/cross_correlation_frp_pm25.png)
 
@@ -101,11 +104,15 @@ Wind is decomposed into orthogonal U/V vectors rather than raw angle to avoid ci
 | Episode duration | 0.483 | 0.015 | ✓ |
 | Fire season mean PM2.5 | 0.202 | 0.330 | ✗ |
 
-The non-significant mean trend while extremes worsen is the study's most important climate finding — consistent with tail amplification under climate change and directly relevant to policy: average-based monitoring misses the growing risk. Physical corroboration: smoke days are +9.2°C hotter, −4.5 mm drier, −1.5 km/h calmer (all p < 0.03), the signature of stagnant blocking anticyclones.
+The non-significant mean trend while extremes worsen is the study's most important climate finding — consistent with tail amplification under climate change and directly relevant to policy: average-based monitoring misses the growing risk.
 
-**RQ2.** Cross-correlation peaks at lag 0 across all three bands (r = 0.199–0.261), indicating same-day smoke transport at daily resolution. The lagged regression decomposition shows PM2.5 autoregression alone explains R² = 0.712; adding fire lags gives +0.012; adding weather gives +0.026. Fire features are marginally informative. Wind analysis confirms smoke days have more positive U-component (+1.22 vs −0.17 m/s), consistent with southerly/westerly flow from the US Pacific Northwest.
+Physical corroboration is partial. Smoke days are **+8.97 °C hotter** (Mann-Whitney p = 2.6 × 10⁻¹⁹) and **−5.14 mm drier** (p = 7.5 × 10⁻⁸); relative humidity is −4.94 % (p = 0.010) and pressure −1.43 hPa (p = 0.018). Wind speed, however, differs by only **−0.26 km/h and is not significant (p = 0.92)**.
 
-**RQ1.** Persistence (MAE = 1.694, R² = 0.600) outperforms all ten trained models. Best ML: Random Forest (MAE = 1.783, R² = 0.153). On the 2021–2024 holdout, Random Forest deteriorates to MAE = 2.088, R² = −0.125; persistence holds at 1.759, 0.384 — demonstrating that non-stationarity is the real challenge, not model capacity. The ablation study's counterintuitive finding: **removing fire features improves performance** (MAE 1.793 → 1.750; R² 0.153 → 0.203). Daily fire counts lack atmospheric transport direction and are conditionally redundant given weather. Phase 2 best model: LightGBM Q=0.80 residual, fire-only features, smoke-day MAE = 21.729 (Δ = 0.624 vs persistence).
+This is a case where extending the record changed a conclusion. On the original ten-year dataset (2015–2024) the calm-air signal was real — smoke days were 1.46 km/h calmer at p = 0.029 — and earlier drafts of this report said so. Across the full twenty-five years the effect disappears, while the temperature and precipitation signals strengthen. The stagnant-anticyclone reading is therefore supported by the heat and dryness evidence but **not** by wind speed, and the longer record is the one to trust.
+
+**RQ2.** Cross-correlation peaks at lag 0 across all three bands (r = 0.199–0.261), indicating same-day smoke transport at daily resolution. The lagged regression decomposition — **in-sample and exploratory, not cross-validated**, on the 3,050 fire-season days — shows PM2.5 autoregression alone explains R² = 0.693; adding fire lags gives +0.008 (0.701); adding weather gives a further +0.019 (0.719). Fire features are marginally informative. Wind analysis confirms smoke days have a more positive U-component (**+1.35 vs −1.01 m/s**, Mann-Whitney p = 0.0035), consistent with southerly/westerly flow from the US Pacific Northwest; the V-component difference is not significant (p = 0.73).
+
+**RQ1.** Persistence (MAE = 1.694, R² = 0.600) outperforms all ten trained models. Best ML: Random Forest, 100 trees (MAE = 1.783, R² = 0.165). On the 2021–2024 holdout, Random Forest deteriorates to MAE = 2.088, R² = −0.125; persistence holds at 1.759, 0.384 — demonstrating that non-stationarity is the real challenge, not model capacity. The ablation study's counterintuitive finding: **removing fire features improves MAE** (1.793 → 1.750), though R² falls at the same time (0.153 → 0.137), so the gain is on average error rather than variance explained. Daily fire counts lack atmospheric transport direction and are conditionally redundant given weather. Phase 2 best model: LightGBM Q=0.80 residual, fire-only features, smoke-day MAE = 21.729 (Δ = 0.624 vs persistence).
 
 ![Model comparison](../figures/model_comparison.png)
 
@@ -143,7 +150,7 @@ Run with: `pip install -r requirements.txt && streamlit run app/streamlit_app.py
 
 ## 8. Lessons Learnt
 
-**Negative results are informative.** Persistence outperforming all ML models is not a failure — it precisely characterises the problem. PM2.5 forecasting at daily resolution is dominated by autocorrelation (r = 0.82), pointing future work toward hourly data and physics-based transport features rather than more model tuning.
+**Negative results are informative.** Persistence outperforming all ML models is not a failure — it precisely characterises the problem. PM2.5 forecasting at daily resolution is dominated by autocorrelation (r = 0.80), pointing future work toward hourly data and physics-based transport features rather than more model tuning.
 
 **Residual framing is the single most important architectural decision.** Predicting the daily change rather than raw PM2.5 transformed smoke-day MAE from 39.650 to 21.391 for quantile models — a 46% improvement from a two-line data transformation.
 
@@ -159,7 +166,7 @@ Run with: `pip install -r requirements.txt && streamlit run app/streamlit_app.py
 
 This project built a 25-year observational record integrating three independent data sources into a 9,133 × 90 dataset and addressed three research questions with statistically rigorous, held-out validation.
 
-**RQ1:** Persistence (MAE = 1.694, R² = 0.600) outperforms all ten standard ML models; the dominant driver is lag-1 autocorrelation (r = 0.82). Satellite fire counts actively degrade performance in ablation. Phase 2's combination of residual framing, LightGBM quantile regression (Q=0.80), and a fire-only feature set achieves smoke-day MAE = 21.729, beating persistence by 0.624 µg/m³. An XGBoost smoke classifier achieves AUPRC = 0.331 vs random 0.005, catching 8 of 13 historical episodes.
+**RQ1:** Persistence (MAE = 1.694, R² = 0.600) outperforms all ten standard ML models; the dominant driver is lag-1 autocorrelation (r = 0.80). Satellite fire counts actively degrade performance in ablation. Phase 2's combination of residual framing, LightGBM quantile regression (Q=0.80), and a fire-only feature set achieves smoke-day MAE = 21.729, beating persistence by 0.624 µg/m³. An XGBoost smoke classifier achieves mean per-fold AUPRC = 0.331 (pooled out-of-fold AP = 0.239) vs random 0.006, catching 8 of 13 historical episodes.
 
 **RQ2:** Cross-correlation peaks at lag 0 (r = 0.199–0.261), indicating same-day transport at daily resolution. Fire lag features add only +1.2% R². The September 2020 worst event had zero BC fire activity — confirming cross-border transport as a structural data ceiling.
 

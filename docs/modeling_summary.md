@@ -6,7 +6,7 @@ This update includes a suite of new scripts and refined modeling approaches deve
 
 1.  **RQ1: Persistence vs. ML Overall**
     *   **Finding:** The standard persistence baseline (tomorrow = today) achieves an overall MAE of **1.694 µg/m³**, outperforming all standard ML models (Random Forest best at 1.783).
-    *   **Reason:** High day-to-day autocorrelation (r=0.82) in PM2.5 levels.
+    *   **Reason:** High day-to-day autocorrelation (r=0.80) in PM2.5 levels.
 
 2.  **The Smoke-Day Challenge**
     *   Persistence fails catastrophically during smoke events (MAE **22.353**), as it lags the actual spikes by a full day.
@@ -24,5 +24,5 @@ This update includes a suite of new scripts and refined modeling approaches deve
 
 *   **`scripts/`**: Training scripts for Quantile Regression (`asymmetric_loss`), XGBoost Classifier (`smoke_detector`), Anomaly Gate, and Residual Correction.
 *   **`experiment_results.md`**: Detailed performance metrics for all 9 follow-up experiments.
-*   **`report_final.md` & `speaking_notes.md`**: Updated to reflect these findings for the final presentation.
+*   **`report_final.md`**: Updated to reflect these findings.
 *   **`figures/`**: Precision-Recall curves for the new smoke detection models.

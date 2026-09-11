@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vancouver Wildfire Smoke Predictor</title>
+<style>
+:root{
+  --bg:#fdfbf8; --bg-alt:#f6f1ea; --card:#fffdfa; --fg:#2f2d35; --muted:#6d6875;
+  --line:#e9e1d6; --line-soft:#f0eae1;
+  --accent:#5b7f9e; --accent-soft:#dfe9f1;
+  --ember:#b5734a; --ember-soft:#f6e6da;
+  --lilac:#7f6f9e; --lilac-soft:#e8e3f0;
+  --ok:#54876a; --ok-soft:#dfeee4;
+  --warn:#a8813f; --warn-soft:#f7edda;
+  --bad:#a96562; --bad-soft:#f6e2e0;
+  --code-bg:#f4efe8;
+  --sidebar:302px;
+  --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#191a1f; --bg-alt:#1f2027; --card:#21232a; --fg:#e6e3dd; --muted:#a09caa;
+  --line:#33353f; --line-soft:#2a2c34;
+  --accent:#8fb4d0; --accent-soft:#26313b;
+  --ember:#d59a72; --ember-soft:#36281f;
+  --lilac:#b4a5d0; --lilac-soft:#2c2739;
+  --ok:#86bb9a; --ok-soft:#1f2f26;
+  --warn:#d8ae66; --warn-soft:#332a1a;
+  --bad:#d99490; --bad-soft:#33221f;
+  --code-bg:#24262e;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#191a1f; --bg-alt:#1f2027; --card:#21232a; --fg:#e6e3dd; --muted:#a09caa;
+    --line:#33353f; --line-soft:#2a2c34;
+    --accent:#8fb4d0; --accent-soft:#26313b;
+    --ember:#d59a72; --ember-soft:#36281f;
+    --lilac:#b4a5d0; --lilac-soft:#2c2739;
+    --ok:#86bb9a; --ok-soft:#1f2f26;
+    --warn:#d8ae66; --warn-soft:#332a1a;
+    --bad:#d99490; --bad-soft:#33221f;
+    --code-bg:#24262e;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:1.5rem}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.shell{display:flex; min-height:100vh}
+
+/* ---------- sidebar ---------- */
+nav.side{
+  width:var(--sidebar); flex:0 0 var(--sidebar); background:var(--bg-alt);
+  border-right:1px solid var(--line); position:sticky; top:0; height:100vh;
+  overflow-y:auto; padding:1.6rem 0 3rem;
+}
+nav.side .brand{padding:0 1.5rem 1.1rem; border-bottom:1px solid var(--line); margin-bottom:1rem}
+nav.side .brand h1{font-size:1.02rem; margin:0 0 .3rem; letter-spacing:-.01em; line-height:1.35}
+nav.side .brand p{margin:0; font-size:.78rem; color:var(--muted); line-height:1.5}
+nav.side ol{list-style:none; margin:0; padding:0}
+nav.side > ol > li{margin-bottom:.1rem}
+nav.side a{
+  display:block; padding:.42rem 1.5rem .42rem 1.5rem; color:var(--muted);
+  text-decoration:none; font-size:.855rem; border-left:2px solid transparent; transition:.13s;
+}
+nav.side a:hover{color:var(--fg); background:var(--card)}
+nav.side a.top{color:var(--fg); font-weight:560; display:flex; gap:.35rem; align-items:baseline}
+nav.side a.top .num{
+  flex:0 0 1.2rem; color:var(--accent); font-variant-numeric:tabular-nums;
+  font-size:.8rem; font-weight:600;
+}
+nav.side ol ol a{padding-left:3.05rem; font-size:.805rem}
+nav.side a.active{color:var(--accent); border-left-color:var(--accent); background:var(--accent-soft)}
+.themebtn{
+  margin:1.2rem 1.5rem 0; padding:.44rem .8rem; width:calc(100% - 3rem);
+  background:var(--card); border:1px solid var(--line); border-radius:7px;
+  color:var(--muted); font-size:.8rem; cursor:pointer; font-family:inherit;
+}
+.themebtn:hover{color:var(--fg); border-color:var(--accent)}
+
+/* ---------- main ---------- */
+main{flex:1; min-width:0; max-width:920px; margin:0 auto; padding:3.2rem 3rem 7rem}
+h2{
+  font-size:1.72rem; letter-spacing:-.02em; margin:0 0 .5rem; line-height:1.25;
+  padding-top:.6rem;
+}
+h2 .num{color:var(--accent); font-size:1.05rem; font-weight:600; display:block; margin-bottom:.35rem;
+  letter-spacing:.06em; text-transform:uppercase}
+h3{font-size:1.12rem; margin:2.3rem 0 .7rem; letter-spacing:-.01em}
+h4{font-size:.96rem; margin:1.5rem 0 .5rem; color:var(--muted); font-weight:620}
+p{margin:0 0 1.05rem}
+section{margin-bottom:4.2rem; scroll-margin-top:1.5rem}
+section > h2{border-top:1px solid var(--line); margin-top:0}
+a{color:var(--accent)}
+code{font-family:var(--mono); font-size:.855em; background:var(--code-bg); padding:.13em .38em; border-radius:4px}
+pre{background:var(--code-bg); padding:1rem 1.15rem; border-radius:9px; overflow-x:auto;
+  border:1px solid var(--line-soft); font-size:.83rem; line-height:1.6}
+pre code{background:none; padding:0; font-size:1em}
+hr{border:0; border-top:1px solid var(--line); margin:2.5rem 0}
+strong{font-weight:625}
+
+/* ---------- hero ---------- */
+.hero{margin-bottom:3.4rem}
+.hero h1{font-size:2.35rem; line-height:1.14; letter-spacing:-.035em; margin:0 0 .9rem}
+.hero .sub{font-size:1.07rem; color:var(--muted); margin-bottom:1.5rem; max-width:44rem}
+.meta{display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:2rem}
+.meta span{
+  font-size:.775rem; padding:.3rem .72rem; border-radius:20px;
+  background:var(--bg-alt); border:1px solid var(--line); color:var(--muted);
+}
+
+/* ---------- cards / callouts ---------- */
+.paths{display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:.9rem; margin:1.6rem 0 2rem}
+.path{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:1.05rem 1.15rem}
+.path h4{margin:0 0 .4rem; color:var(--fg); font-size:.93rem}
+.path p{font-size:.845rem; color:var(--muted); margin:0 0 .6rem; line-height:1.58}
+.path a{font-size:.82rem; text-decoration:none; font-weight:560}
+.path a:hover{text-decoration:underline}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.8rem; margin:1.8rem 0 2.2rem}
+.stat{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:.95rem 1rem}
+.stat b{display:block; font-size:1.42rem; letter-spacing:-.02em; margin-bottom:.15rem; color:var(--accent)}
+.stat span{font-size:.765rem; color:var(--muted); line-height:1.45; display:block}
+
+.note{border-left:3px solid var(--accent); background:var(--accent-soft); padding:.95rem 1.15rem;
+  border-radius:0 9px 9px 0; margin:1.5rem 0; font-size:.9rem}
+.note.warn{border-left-color:var(--warn); background:var(--warn-soft)}
+.note.bad{border-left-color:var(--bad); background:var(--bad-soft)}
+.note.ok{border-left-color:var(--ok); background:var(--ok-soft)}
+.note.primer{border-left-color:var(--lilac); background:var(--lilac-soft)}
+.note p:last-child{margin-bottom:0}
+.note .tag{
+  display:inline-block; font-size:.67rem; text-transform:uppercase; letter-spacing:.09em;
+  font-weight:700; margin-bottom:.42rem; opacity:.75;
+}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto; margin:1.3rem 0}
+table{width:100%; border-collapse:collapse; font-size:.862rem; min-width:420px}
+th,td{padding:.58rem .75rem; text-align:left; border-bottom:1px solid var(--line-soft)}
+th{background:var(--bg-alt); font-weight:620; font-size:.79rem; letter-spacing:.02em;
+  color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--line)}
+tbody tr:hover{background:var(--bg-alt)}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:.82rem}
+.win{color:var(--ok); font-weight:620}
+.lose{color:var(--bad); font-weight:620}
+.best td{background:var(--ok-soft)}
+
+/* ---------- figures ---------- */
+figure{margin:1.9rem 0; padding:0}
+figure img{width:100%; height:auto; display:block; border-radius:10px; border:1px solid var(--line);
+  background:#fff}
+figcaption{font-size:.808rem; color:var(--muted); margin-top:.65rem; line-height:1.58}
+.shot img{border-radius:10px; box-shadow:0 2px 14px rgba(0,0,0,.09)}
+
+/* ---------- mermaid ---------- */
+.diagram{background:var(--card); border:1px solid var(--line); border-radius:11px;
+  padding:1.3rem .8rem; margin:1.8rem 0; overflow-x:auto; text-align:center}
+.diagram svg{max-width:100%; height:auto}
+
+/* ---------- glossary ---------- */
+dl.gloss{margin:1.4rem 0; display:grid; grid-template-columns:minmax(150px,auto) 1fr; gap:.5rem 1.4rem}
+dl.gloss dt{font-weight:620; font-size:.875rem; color:var(--accent)}
+dl.gloss dd{margin:0; font-size:.875rem; color:var(--muted); line-height:1.6}
+
+footer{border-top:1px solid var(--line); padding-top:1.6rem; margin-top:1rem;
+  font-size:.83rem; color:var(--muted)}
+footer p{margin:0 0 .55rem}
+
+@media(max-width:1080px){
+  :root{--sidebar:250px}
+  main{padding:2.4rem 1.8rem 5rem}
+}
+@media(max-width:820px){
+  .shell{flex-direction:column}
+  nav.side{width:100%; flex:none; height:auto; position:static; border-right:0;
+    border-bottom:1px solid var(--line); max-height:none}
+  nav.side ol ol{display:none}
+  main{padding:2rem 1.2rem 4rem}
+  .hero h1{font-size:1.78rem}
+  dl.gloss{grid-template-columns:1fr; gap:.15rem 0}
+  dl.gloss dd{margin-bottom:.75rem}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="side">
+  <div class="brand">
+    <h1>Vancouver Wildfire Smoke Predictor</h1>
+    <p>Forecasting and profiling smoke impacts on Vancouver's air quality, 2000–2025</p>
+  </div>
+  <ol>
+    <li><a href="#start" class="top"><span class="num">—</span>Start here</a></li>
+    <li><a href="#problem" class="top"><span class="num">1</span>The problem</a>
+      <ol>
+        <li><a href="#problem-why">Why Vancouver</a></li>
+        <li><a href="#problem-rqs">Three questions</a></li>
+      </ol>
+    </li>
+    <li><a href="#data" class="top"><span class="num">2</span>Building the record</a>
+      <ol>
+        <li><a href="#data-sources">Three sources</a></li>
+        <li><a href="#data-merge">Merging to daily</a></li>
+        <li><a href="#data-caveats">What the data cannot see</a></li>
+      </ol>
+    </li>
+    <li><a href="#features" class="top"><span class="num">3</span>Features</a>
+      <ol>
+        <li><a href="#features-groups">Five groups</a></li>
+        <li><a href="#features-wind">Why wind is split in two</a></li>
+      </ol>
+    </li>
+    <li><a href="#rq3" class="top"><span class="num">4</span>RQ3 — Is it worsening?</a>
+      <ol>
+        <li><a href="#rq3-episodes">46 days, 14 episodes</a></li>
+        <li><a href="#rq3-trends">Extremes vs averages</a></li>
+        <li><a href="#rq3-weather">The weather signature</a></li>
+      </ol>
+    </li>
+    <li><a href="#rq2" class="top"><span class="num">5</span>RQ2 — How fast does smoke arrive?</a>
+      <ol>
+        <li><a href="#rq2-xcorr">Cross-correlation</a></li>
+        <li><a href="#rq2-decomp">What fire adds</a></li>
+      </ol>
+    </li>
+    <li><a href="#rq1a" class="top"><span class="num">6</span>RQ1 — Persistence wins</a>
+      <ol>
+        <li><a href="#rq1a-cv">Time-series CV</a></li>
+        <li><a href="#rq1a-results">Ten models, none better</a></li>
+        <li><a href="#rq1a-ablation">The ablation surprise</a></li>
+      </ol>
+    </li>
+    <li><a href="#phase2" class="top"><span class="num">7</span>Specialising for smoke days</a>
+      <ol>
+        <li><a href="#p2-residual">Residual framing</a></li>
+        <li><a href="#p2-quantile">Quantile regression</a></li>
+        <li><a href="#p2-subset">Fire-only features</a></li>
+        <li><a href="#p2-gate">The smoke classifier</a></li>
+        <li><a href="#p2-negative">What did not work</a></li>
+      </ol>
+    </li>
+    <li><a href="#dashboard" class="top"><span class="num">8</span>The dashboard</a></li>
+    <li><a href="#lesson" class="top"><span class="num">9</span>When the record grew</a></li>
+    <li><a href="#limits" class="top"><span class="num">10</span>Limitations</a>
+      <ol>
+        <li><a href="#limits-eval">Evaluation</a></li>
+        <li><a href="#limits-data">Data</a></li>
+        <li><a href="#limits-next">What comes next</a></li>
+      </ol>
+    </li>
+    <li><a href="#glossary" class="top"><span class="num">—</span>Glossary</a></li>
+  </ol>
+  <button class="themebtn" id="themebtn">Switch theme</button>
+</nav>
+
+<main>
+
+<div class="hero">
+  <h1>When the sky turns orange</h1>
+  <p class="sub">Twenty-five years of Vancouver air quality, satellite fire detections and weather,
+  joined into one daily record — and an honest account of what can and cannot be predicted from it.</p>
+  <div class="meta">
+    <span>CMPT 733 · Big Data Lab II · SFU</span>
+    <span>group project</span>
+    <span>9,133 days · 2000–2025</span>
+    <span>Python · scikit-learn · LightGBM · XGBoost · Streamlit</span>
+  </div>
+</div>
+
+<!-- ============ START HERE ============ -->
+<section id="start">
+<h2><span class="num">Orientation</span>Start here</h2>
+
+<p>This page is written to be read top to bottom by someone who has never seen the project, and to be
+jumped around by someone who already knows the domain. The chapters follow the order the work
+actually happened: build the record, look at it, then try to predict it.</p>
+
+<div class="paths">
+  <div class="path">
+    <h4>New to the project</h4>
+    <p>Read straight through. Every unfamiliar term is explained in a purple box the first time it
+    appears, and defined again in the glossary.</p>
+    <a href="#problem">Begin at chapter 1 →</a>
+  </div>
+  <div class="path">
+    <h4>You know ML, not this domain</h4>
+    <p>Chapter 2 explains where the data comes from and what it structurally cannot see — which turns
+    out to bound every result.</p>
+    <a href="#data">Jump to the data →</a>
+  </div>
+  <div class="path">
+    <h4>You want the modelling</h4>
+    <p>The headline is that a one-line baseline beats ten trained models, and why that is a finding
+    rather than a failure.</p>
+    <a href="#rq1a">Jump to RQ1 →</a>
+  </div>
+  <div class="path">
+    <h4>You're evaluating rigour</h4>
+    <p>Chapter 9 covers a finding that reversed when the record was extended. Chapter 10 is the
+    unvarnished limitations list.</p>
+    <a href="#lesson">Jump to the honest part →</a>
+  </div>
+</div>
+
+<h3>The result in six numbers</h3>
+<div class="stats">
+  <div class="stat"><b>9,133</b><span>daily records, zero missing days</span></div>
+  <div class="stat"><b>46</b><span>smoke days in 25 years — 0.5%</span></div>
+  <div class="stat"><b>163.5</b><span>µg/m³ record peak, 14 Sep 2020</span></div>
+  <div class="stat"><b>1.694</b><span>persistence MAE — unbeaten overall</span></div>
+  <div class="stat"><b>21.729</b><span>best smoke-day MAE, vs 22.353</span></div>
+  <div class="stat"><b>0.239</b><span>pooled AP for the smoke classifier</span></div>
+</div>
+
+<div class="note">
+<span class="tag">The short version</span>
+<p>For ordinary days, "tomorrow looks like today" beats every model tried — PM2.5 is so strongly
+autocorrelated (r = 0.80) that there is little left to predict. The interesting problem is the 0.5%
+of days that are smoke days, where that same baseline fails badly because it always lags the spike
+by one day. Chapter 7 describes what it takes to beat it there: predict the <em>change</em> rather
+than the level, penalise under-prediction asymmetrically, and drop the weather features that anchor
+the model to normal conditions.</p>
+</div>
+</section>
+
+<!-- ============ 1. PROBLEM ============ -->
+<section id="problem">
+<h2><span class="num">Chapter 1</span>The problem</h2>
+
+<h3 id="problem-why">Why Vancouver</h3>
+<p>Vancouver sits between two fire-prone geographies: the BC Interior plateau to its north and east,
+and the western United States to its south. Smoke from either can settle over the city for days.
+Short-term PM2.5 exposure above 35 µg/m³ is associated with emergency department visits for asthma
+and cardiac events, so the question of whether tomorrow will be a smoke day is a public health
+question with a short, actionable horizon.</p>
+
+<div class="note primer">
+<span class="tag">Primer — PM2.5</span>
+<p>Particulate matter under 2.5 micrometres across: fine enough to reach deep into the lungs and
+cross into the bloodstream. It is measured in micrograms per cubic metre (µg/m³). Vancouver's typical
+day sits near 5 µg/m³. This project calls any day above <strong>25 µg/m³</strong> a
+<strong>smoke day</strong>.</p>
+</div>
+
+<p>On 14 September 2020 the city recorded a daily mean of <strong>163.5 µg/m³</strong> — more than six
+times the smoke-day threshold and roughly thirty times a normal day. The fires responsible were
+burning in Oregon and Washington, hundreds of kilometres to the south. That single fact ends up
+shaping the entire modelling story, for reasons chapter 2 makes clear.</p>
+
+<figure>
+  <img src="assets/pm25_timeseries.png" alt="Daily PM2.5 for Metro Vancouver from 2000 to 2025, with smoke episodes highlighted in red. Most of the series sits near 5 micrograms per cubic metre; a small number of sharp spikes rise above 25, with the tallest reaching 163.5 in September 2020.">
+  <figcaption><strong>Figure 1.</strong> Twenty-five years of daily PM2.5. The flatness is the point —
+  smoke events are rare, brief and enormous relative to the baseline. Everything difficult about this
+  problem follows from that shape.</figcaption>
+</figure>
+
+<h3 id="problem-rqs">Three questions</h3>
+<p>The project asks three questions that sit at different timescales, and are answered in the order
+they were investigated.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Question</th><th>Asks</th><th>Answered in</th></tr></thead>
+<tbody>
+<tr><td><strong>RQ3 — Trends</strong></td><td>Has Vancouver's smoke season worsened since 2000?</td><td>Chapter 4</td></tr>
+<tr><td><strong>RQ2 — Lag</strong></td><td>How long between a fire burning and smoke arriving?</td><td>Chapter 5</td></tr>
+<tr><td><strong>RQ1 — Forecast</strong></td><td>Can tomorrow's PM2.5 be predicted better than a naive baseline?</td><td>Chapters 6–7</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>They are numbered by their position in the original proposal but presented here in the order the
+analysis ran: describe the phenomenon, then measure its physical timing, then try to predict it. Each
+stage constrained the next.</p>
+</section>
+
+<!-- ============ 2. DATA ============ -->
+<section id="data">
+<h2><span class="num">Chapter 2</span>Building the record</h2>
+
+<p>There is no off-the-shelf dataset for this question. Three independent public sources were
+downloaded, cleaned and joined on a daily date key.</p>
+
+<h3 id="data-sources">Three sources</h3>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  A["`**BC Ministry of Environment**
+  hourly PM2.5 · anonymous FTP
+  25 Metro Vancouver stations`"]
+  B["`**NASA FIRMS**
+  active fire detections
+  MODIS 2000–2011
+  VIIRS 2012–2024`"]
+  C["`**Open-Meteo**
+  hourly weather
+  49.25°N, 123.12°W`"]
+
+  A --> D["`**build_dataset.py**
+  aggregate to daily
+  join on date`"]
+  B --> D
+  C --> D
+  D --> E["`**dataset.csv**
+  9,133 rows × 90 cols
+  2000-01-01 → 2025-01-01`"]
+
+  style D fill:#dfe9f1,stroke:#a9c2d3,color:#2f2d35
+  style E fill:#dfeee4,stroke:#9dc4ad,color:#2f2d35
+</pre>
+</div>
+
+<p>Each stream arrives at a different resolution and has to be reduced to one row per day. Air quality
+arrives hourly per station and is averaged across stations into a city-wide daily mean. Weather
+arrives hourly for a single grid point and is aggregated to daily means, maxima and sums. Fire
+detections are the interesting case.</p>
+
+<h4>Fire detections become distance bands</h4>
+<p>A satellite fire detection is a point on the globe with a timestamp and a
+<strong>fire radiative power</strong> reading. A raw count is nearly meaningless for Vancouver — a
+fire 900 km away matters very differently from one 90 km away. Each detection's great-circle distance
+to Vancouver is computed, and detections are bucketed into three bands, each yielding a daily count
+and an FRP sum.</p>
+
+<div class="note primer">
+<span class="tag">Primer — FRP</span>
+<p>Fire radiative power, measured in megawatts, is how much energy a fire is radiating at the moment
+the satellite passes overhead. It is a proxy for intensity, and therefore for smoke production, in a
+way a simple count of detections is not.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Band</th><th>Distance from Vancouver</th><th>Columns produced</th></tr></thead>
+<tbody>
+<tr><td>Close</td><td>0–200 km</td><td>count, FRP sum, FRP mean</td></tr>
+<tr><td>Medium</td><td>200–500 km</td><td>count, FRP sum, FRP mean</td></tr>
+<tr><td>Far</td><td>500–1,000 km</td><td>count, FRP sum, FRP mean</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="data-merge">Merging to daily</h3>
+<p>The three streams are joined with a left join onto air quality, so the row set is driven by days
+where Vancouver actually recorded PM2.5. Fire columns are filled with zero where no detections
+occurred — an absence of fire is genuine information, not missingness. The result covers
+2000-01-01 to 2025-01-01 with <strong>no gaps</strong>: every one of the 9,133 calendar days in that
+span is present, and PM2.5 is never imputed.</p>
+
+<div class="note">
+<span class="tag">Two row counts, one dataset</span>
+<p>The merged file holds <strong>9,133</strong> rows, but modelling uses <strong>9,125</strong>. The
+first seven days are consumed by the lag-7 warm-up (there is no "PM2.5 seven days ago" for
+1 January 2000) and the last day has no next-day value to predict. Both numbers appear in the
+documentation and they are not in conflict.</p>
+</div>
+
+<h3 id="data-caveats">What the data cannot see</h3>
+<p>Three structural limits are worth stating up front, because they bound results in later chapters
+rather than merely qualifying them.</p>
+
+<p><strong>The fire query stops at 48°N.</strong> The bounding box passed to NASA FIRMS covers British
+Columbia and clips a narrow strip of northern Washington. The Oregon and northern California fires
+that produced the September 2020 record burned far to the south of it. On 14 September 2020 the
+dataset records <code>fire_count_total = 0</code> and <code>fire_frp_sum_total = 0.0</code> against
+<code>pm25 = 163.5</code>. No model built on these features can explain the worst event in the
+record — not because the model is weak, but because the evidence is absent.</p>
+
+<p><strong>The satellite changed in 2012.</strong> Fire detections come from MODIS through 2011 and
+VIIRS from 2012 onward. VIIRS resolves at 375 m against MODIS's 1 km and detects far more fires: the
+mean is 21 detections per day before 2012 and 247 after. That ratio is <em>not</em> a clean measure of
+the instrument change, because 2017, 2018, 2021 and 2023 were genuinely severe fire seasons. A real
+trend and a sensor discontinuity are confounded in every fire feature, and the pipeline does not
+separate them.</p>
+
+<p><strong>The monitoring network grew.</strong> The number of reporting stations rises from about
+three in 2000 to about twenty in 2024. A city-wide average over three stations is a noisier, spikier
+quantity than one over twenty. More stations smooth extremes, which means the worsening trend
+reported in chapter 4 is, if anything, understated — but the comparison is not like-for-like.</p>
+</section>
+
+<!-- ============ 3. FEATURES ============ -->
+<section id="features">
+<h2><span class="num">Chapter 3</span>Features</h2>
+
+<h3 id="features-groups">Five groups</h3>
+<p>Thirty-four features were engineered for the first modelling phase, in five conceptual groups.
+Phase 2 later added four fire × wind interaction terms, bringing its working set to 38.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Group</th><th>Features</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>PM2.5 autoregressive</td><td>lags 1, 2, 3, 7 days</td><td>Yesterday is by far the strongest predictor (r = 0.80)</td></tr>
+<tr><td>Fire same-day</td><td>count + FRP per band</td><td>Concurrent fire activity</td></tr>
+<tr><td>Fire lagged</td><td>lags 1–3, total and close/medium</td><td>Allows for delayed transport</td></tr>
+<tr><td>Wind components</td><td>U (east) + V (north)</td><td>Direction without the 0°/360° discontinuity</td></tr>
+<tr><td>Calendar</td><td>month, day-of-year, fire-season flag</td><td>Seasonality</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="features-wind">Why wind is split in two</h3>
+<p>Wind direction arrives as a compass bearing in degrees. Feeding that to a model directly is a
+mistake that looks harmless: 359° and 1° are two degrees apart in reality but 358 units apart
+numerically. A tree splitting on that variable learns nonsense near north.</p>
+
+<p>The fix is to decompose the bearing and speed into two orthogonal components — <strong>U</strong>
+for the eastward part and <strong>V</strong> for the northward part. Both are continuous across the
+wrap-around point, and each carries an interpretable meaning: a positive U means air arriving from the
+west, a negative U from the east.</p>
+
+<div class="note">
+<span class="tag">This paid off</span>
+<p>The U component turns out to carry a real signal. On smoke days its mean is <strong>+1.35 m/s</strong>
+against <strong>−1.01 m/s</strong> on normal days (Mann-Whitney p = 0.0035) — westerly and southerly
+flow, consistent with smoke arriving from the US Pacific Northwest rather than from the BC interior.
+The V component shows no significant difference (p = 0.73).</p>
+</div>
+</section>
+
+<!-- ============ 4. RQ3 ============ -->
+<section id="rq3">
+<h2><span class="num">Chapter 4</span>RQ3 — Is it getting worse?</h2>
+
+<p>The first analysis run was description rather than prediction: what does the smoke record actually
+look like, and has it changed?</p>
+
+<h3 id="rq3-episodes">46 days, 14 episodes</h3>
+<p>Across 2000–2024, <strong>46 days</strong> exceeded 25 µg/m³. Grouping consecutive smoke days into
+<strong>episodes</strong> gives <strong>14</strong> distinct events. The distribution is severely
+skewed: nine episodes last three days or fewer, while the worst three account for most of the total
+exposure.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Episode</th><th class="num">Days</th><th class="num">Peak µg/m³</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>2002-11-01</td><td class="num">1</td><td class="num">27.4</td><td>Earliest in the record</td></tr>
+<tr><td>2005-09-13</td><td class="num">1</td><td class="num">28.1</td><td></td></tr>
+<tr><td>2010-08-05</td><td class="num">1</td><td class="num">30.6</td><td></td></tr>
+<tr><td>2015-07-05 → 07-06</td><td class="num">2</td><td class="num">47.1</td><td></td></tr>
+<tr><td>2017-08-02 → 08-11</td><td class="num">10</td><td class="num">55.5</td><td>Longest episode</td></tr>
+<tr><td>2017-09-05 → 09-07</td><td class="num">3</td><td class="num">42.3</td><td></td></tr>
+<tr><td>2018-08-13 → 08-15</td><td class="num">3</td><td class="num">54.5</td><td></td></tr>
+<tr><td>2018-08-19 → 08-23</td><td class="num">5</td><td class="num">112.1</td><td></td></tr>
+<tr class="best"><td>2020-09-11 → 09-18</td><td class="num">8</td><td class="num">163.5</td><td>US-origin; invisible to BC fire data</td></tr>
+<tr><td>2021-08-13 → 08-14</td><td class="num">2</td><td class="num">74.8</td><td></td></tr>
+<tr><td>2022-09-11</td><td class="num">1</td><td class="num">60.0</td><td></td></tr>
+<tr><td>2022-10-16 → 10-20</td><td class="num">5</td><td class="num">79.2</td><td>Unusually late in the year</td></tr>
+<tr><td>2023-08-20</td><td class="num">1</td><td class="num">46.6</td><td></td></tr>
+<tr><td>2023-08-25 → 08-27</td><td class="num">3</td><td class="num">34.3</td><td></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Eleven of the fourteen fall in 2015 or later. That is the trend question in raw form.</p>
+
+<h3 id="rq3-trends">Extremes move, averages do not</h3>
+
+<div class="note primer">
+<span class="tag">Primer — Spearman's ρ</span>
+<p>A rank correlation. Rather than asking "does this go up linearly", it asks "does this tend to go
+up" by comparing the ordering of values rather than the values themselves. It is the right tool when
+the quantity is not normally distributed and there are few observations — both true of annual smoke
+counts. ρ runs from −1 to +1; the p-value is the probability of seeing that much monotone trend by
+chance.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Metric</th><th class="num">ρ</th><th class="num">p</th><th>Significant at 0.05?</th></tr></thead>
+<tbody>
+<tr><td>Smoke day frequency</td><td class="num">0.480</td><td class="num">0.015</td><td class="win">yes</td></tr>
+<tr><td>Peak episode PM2.5</td><td class="num">0.648</td><td class="num">0.043</td><td class="win">yes, marginally</td></tr>
+<tr><td>Longest episode per year</td><td class="num">0.483</td><td class="num">0.015</td><td class="win">yes</td></tr>
+<tr><td>Fire-season mean PM2.5</td><td class="num">0.202</td><td class="num">0.330</td><td class="lose">no</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The last row is the most important one. <strong>Average air quality during fire season has not
+measurably changed, while the extremes have.</strong> Smoke is becoming more frequent, longer-lasting
+and more severe without moving the seasonal mean — which is precisely what tail amplification looks
+like, and precisely what average-based air quality monitoring is built to miss.</p>
+
+<figure>
+  <img src="assets/smoke_season_trends.png" alt="Bar chart of annual smoke day counts from 2000 to 2024. Counts are zero or one for most early years, then rise sharply from 2015 onward with the tallest bars in 2017, 2018 and 2020.">
+  <figcaption><strong>Figure 2.</strong> Annual smoke day counts. The concentration of events after
+  2015 drives all three significant trends.</figcaption>
+</figure>
+
+<div class="note warn">
+<span class="tag">Read these with care</span>
+<p>Four tests were run at α = 0.05 with no multiple-comparison correction. Under a Holm correction the
+peak-severity result (p = 0.043) would not survive; the frequency result (p = 0.015) would. The four
+tests also do not share a sample definition — three run over all 25 years with non-event years
+zero-filled, while peak severity runs over only the ten years that contain an episode, which is why
+it is the weakest of the four.</p>
+</div>
+
+<h3 id="rq3-weather">The weather signature</h3>
+<p>Smoke days do not look meteorologically like ordinary days. Comparing the two groups with
+Mann-Whitney U tests:</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Variable</th><th class="num">Smoke days</th><th class="num">Normal days</th><th class="num">Difference</th><th class="num">p</th></tr></thead>
+<tbody>
+<tr><td>Temperature (°C)</td><td class="num">19.26</td><td class="num">10.29</td><td class="num win">+8.97</td><td class="num">2.6e−19</td></tr>
+<tr><td>Precipitation (mm)</td><td class="num">0.54</td><td class="num">5.67</td><td class="num win">−5.14</td><td class="num">7.5e−08</td></tr>
+<tr><td>Relative humidity (%)</td><td class="num">75.64</td><td class="num">80.58</td><td class="num win">−4.94</td><td class="num">0.010</td></tr>
+<tr><td>Pressure (hPa)</td><td class="num">1015.06</td><td class="num">1016.50</td><td class="num win">−1.43</td><td class="num">0.018</td></tr>
+<tr><td>Wind speed (km/h)</td><td class="num">7.85</td><td class="num">8.11</td><td class="num lose">−0.26</td><td class="num">0.92</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Smoke days are dramatically hotter and drier. They are <em>not</em> measurably calmer — the wind
+speed difference is negligible and statistically indistinguishable from zero. That last row has a
+history worth telling, and chapter 9 tells it.</p>
+</section>
+
+<!-- ============ 5. RQ2 ============ -->
+<section id="rq2">
+<h2><span class="num">Chapter 5</span>RQ2 — How fast does smoke arrive?</h2>
+
+<p>If a fire starts today 400 km away, when does Vancouver's air quality degrade? A useful forecast
+would exploit that delay. The analysis looked for it and largely did not find one.</p>
+
+<h3 id="rq2-xcorr">Cross-correlation</h3>
+
+<div class="note primer">
+<span class="tag">Primer — cross-correlation at lag k</span>
+<p>Shift one series by k days against another and measure the correlation. Doing this across a range
+of k shows which offset aligns them best. If smoke took three days to arrive, fire activity would
+correlate most strongly with PM2.5 three days later, and the curve would peak at k = 3.</p>
+</div>
+
+<p>Fire activity and PM2.5 were deseasonalised and cross-correlated at lags from −7 to +14 days,
+restricted to the June–September fire season. Across all three distance bands the peak sits at
+<strong>lag 0</strong>, with correlations of r = 0.199 to 0.261.</p>
+
+<figure>
+  <img src="assets/cross_correlation_frp_pm25.png" alt="Cross-correlation curves between fire radiative power and PM2.5 for close, medium and far distance bands, across lags from minus seven to plus fourteen days. All three curves peak at lag zero.">
+  <figcaption><strong>Figure 3.</strong> All three bands peak at lag 0. At daily resolution, smoke
+  from a fire up to 1,000 km away shows up the same calendar day.</figcaption>
+</figure>
+
+<p>The honest reading is that this measures a ceiling rather than a delay. Smoke plainly takes hours
+to travel hundreds of kilometres — but a dataset with one row per day cannot resolve anything finer
+than a day. The finding is "the delay is under 24 hours", which is a real answer to the question and
+also a demonstration that daily resolution is the wrong instrument for it.</p>
+
+<h3 id="rq2-decomp">What fire activity actually adds</h3>
+<p>A regression decomposition asked how much each feature group contributes to explaining fire-season
+PM2.5, adding one group at a time.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Feature set</th><th class="num">R²</th><th class="num">Gain</th></tr></thead>
+<tbody>
+<tr><td>PM2.5 lags only</td><td class="num">0.693</td><td class="num">—</td></tr>
+<tr><td>+ fire lags</td><td class="num">0.701</td><td class="num">+0.008</td></tr>
+<tr><td>+ weather</td><td class="num">0.719</td><td class="num">+0.019</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note warn">
+<span class="tag">In-sample</span>
+<p>These are in-sample, exploratory figures on 3,050 fire-season days, not cross-validated — the
+notebook says so explicitly and the number would be lower under proper validation. They are included
+to compare groups against each other, not as performance estimates.</p>
+</div>
+
+<p>Fire features add well under one percentage point of explanatory power on top of PM2.5's own
+history. That is the first clear signal of what chapter 6 confirms: satellite fire counts, at this
+resolution, are close to useless for predicting Vancouver's air quality.</p>
+</section>
+
+<!-- ============ 6. RQ1 PHASE 1 ============ -->
+<section id="rq1a">
+<h2><span class="num">Chapter 6</span>RQ1 — Persistence wins</h2>
+
+<h3 id="rq1a-cv">Getting the evaluation right first</h3>
+<p>Time series break the usual cross-validation assumption. Shuffling days at random and holding some
+out lets a model train on 2023 and be tested on 2019 — it learns the future to predict the past, and
+every score is inflated. The fix is an <strong>expanding window</strong>: train on everything before a
+cutoff, test on what follows, and step the cutoff forward.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  subgraph F1["`Fold 1 — cutoff 2004`"]
+    A1["`train: 2000–2003`"] --> B1["`test: 2004+`"]
+  end
+  subgraph F2["`Fold 2 — cutoff 2008`"]
+    A2["`train: 2000–2007`"] --> B2["`test: 2008+`"]
+  end
+  subgraph F3["`Fold 3 — cutoff 2012`"]
+    A3["`train: 2000–2011`"] --> B3["`test: 2012+`"]
+  end
+  subgraph F4["`Folds 4–5 — cutoffs 2016, 2020`"]
+    A4["`train grows`"] --> B4["`test shrinks`"]
+  end
+  F1 --> F2 --> F3 --> F4
+
+  style B1 fill:#f6e6da,stroke:#ddb493,color:#2f2d35
+  style B2 fill:#f6e6da,stroke:#ddb493,color:#2f2d35
+  style B3 fill:#f6e6da,stroke:#ddb493,color:#2f2d35
+  style B4 fill:#f6e6da,stroke:#ddb493,color:#2f2d35
+</pre>
+</div>
+
+<p>Scaling is fitted inside each fold on the training portion only, so no test-period statistics leak
+backwards. Every model in this chapter is scored the same way, against the same folds.</p>
+
+<div class="note primer">
+<span class="tag">Primer — MAE and R²</span>
+<p><strong>MAE</strong> is mean absolute error: on average, how many µg/m³ the prediction misses by.
+Lower is better and it is in the units of the thing being predicted. <strong>R²</strong> is the
+fraction of variance explained; 1.0 is perfect, 0 means no better than always guessing the mean, and
+negative means actively worse than that.</p>
+</div>
+
+<h3 id="rq1a-results">Ten models, none of them better</h3>
+<p>Two baselines and ten trained models were compared. The baselines are deliberately trivial:
+<strong>persistence</strong> predicts tomorrow equals today; <strong>rolling mean</strong> predicts the
+average of recent days.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Model</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">R²</th><th class="num">Smoke-day MAE</th></tr></thead>
+<tbody>
+<tr class="best"><td><strong>Persistence</strong> (baseline)</td><td class="num">1.694</td><td class="num">3.166</td><td class="num">0.600</td><td class="num">22.114</td></tr>
+<tr><td>Random Forest (100 trees)</td><td class="num">1.783</td><td class="num">4.842</td><td class="num">0.165</td><td class="num">43.599</td></tr>
+<tr><td>Random Forest (200 trees)</td><td class="num">1.793</td><td class="num">4.878</td><td class="num">0.153</td><td class="num">43.496</td></tr>
+<tr><td>LightGBM (tuned)</td><td class="num">1.845</td><td class="num">4.898</td><td class="num">0.146</td><td class="num">43.886</td></tr>
+<tr><td>XGBoost</td><td class="num">1.848</td><td class="num">4.883</td><td class="num">0.151</td><td class="num">42.803</td></tr>
+<tr><td>Lasso (α = 0.1)</td><td class="num">1.858</td><td class="num">4.340</td><td class="num">0.329</td><td class="num">34.627</td></tr>
+<tr><td>Ridge / OLS</td><td class="num">2.004</td><td class="num">4.602</td><td class="num">0.246</td><td class="num">32.845</td></tr>
+<tr><td>Rolling mean (baseline)</td><td class="num">2.375</td><td class="num">4.786</td><td class="num">0.087</td><td class="num">36.056</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Persistence wins on MAE and on R², and it is not close. It also wins on smoke-day MAE by a factor
+of two against the tree models — which is startling until you notice what those models are doing.
+They are trained to minimise average error on a dataset where 99.5% of days are clean, so they learn
+to predict "clean" and eat the cost on the rare days. Persistence at least carries yesterday's spike
+forward.</p>
+
+<figure>
+  <img src="assets/model_comparison.png" alt="Horizontal bar chart of cross-validated mean absolute error for each model. The persistence baseline has the shortest bar, with all trained models longer.">
+  <figcaption><strong>Figure 4.</strong> Cross-validated MAE. The baseline is the bar to beat, and
+  nothing beats it.</figcaption>
+</figure>
+
+<p>The reason is visible in the feature importances: PM2.5 lag-1 alone accounts for roughly 40% of
+the Random Forest's importance. The models are, in effect, rediscovering persistence and adding noise
+on top.</p>
+
+<figure>
+  <img src="assets/feature_importance_rf.png" alt="Bar chart of the top twenty Random Forest feature importances. PM2.5 lag-1 dominates at around 40 percent, with all remaining features far smaller and fire variables near zero.">
+  <figcaption><strong>Figure 5.</strong> Top-20 feature importances. Lag-1 dominates; fire variables
+  sit near zero.</figcaption>
+</figure>
+
+<h3 id="rq1a-ablation">The ablation surprise</h3>
+<p>Feature importance answers "what is the model using?" It does not answer "what is worth including?"
+For that you need <strong>ablation</strong> — remove a group and re-measure.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Feature set</th><th class="num">Features</th><th class="num">MAE</th><th class="num">R²</th></tr></thead>
+<tbody>
+<tr><td>All features</td><td class="num">34</td><td class="num">1.793</td><td class="num">0.153</td></tr>
+<tr><td><strong>No fire features</strong></td><td class="num">17</td><td class="num win">1.750</td><td class="num lose">0.137</td></tr>
+<tr><td>No calendar</td><td class="num">31</td><td class="num">1.802</td><td class="num">0.156</td></tr>
+<tr><td>No weather</td><td class="num">24</td><td class="num">2.218</td><td class="num">0.065</td></tr>
+<tr><td>PM2.5 lags only</td><td class="num">4</td><td class="num">2.210</td><td class="num">0.031</td></tr>
+<tr><td>Fire features only</td><td class="num">17</td><td class="num">2.594</td><td class="num">0.017</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Deleting every fire feature from a wildfire smoke model <em>improves</em> its average error. The
+effect is real but narrower than it first appears: MAE improves from 1.793 to 1.750 while R² falls
+from 0.153 to 0.137, so the model gets better on typical days and worse at capturing variance. Both
+halves belong in the summary.</p>
+
+<p>The explanation is that a daily fire count carries no transport direction. A thousand detections
+900 km away with wind blowing them east is indistinguishable, in this feature set, from a thousand
+detections blowing straight at the city. Weather already encodes the stagnation conditions under
+which smoke accumulates, which leaves fire counts contributing mostly noise.</p>
+
+<div class="note warn">
+<span class="tag">Non-stationarity, not capacity</span>
+<p>A holdout test trained on 2000–2020 and evaluated on 2021–2024 sharpened the point. Random Forest
+degrades to MAE 2.088 with <strong>R² = −0.125</strong> — worse than predicting the mean. Persistence
+holds at 1.759 and R² = 0.384. The models are not under-powered; the relationship they learned does
+not hold in the following period.</p>
+</div>
+</section>
+
+<!-- ============ 7. PHASE 2 ============ -->
+<section id="phase2">
+<h2><span class="num">Chapter 7</span>Specialising for smoke days</h2>
+
+<p>Chapter 6 establishes that overall accuracy is a solved and uninteresting problem — persistence
+owns it. Phase 2 changes the question: <em>accept a worse average in exchange for being better on the
+days that matter.</em> Thirteen scripts across nine experiments explored that trade.</p>
+
+<p>The benchmark shifts accordingly. On the evaluation window the folds actually cover, persistence
+scores <strong>1.668</strong> overall and <strong>22.353</strong> on smoke days. Beating that second
+number is the goal, and "smoke Δ" below is how much better than persistence a model is on smoke days.</p>
+
+<h3 id="p2-residual">Residual framing — the one that mattered</h3>
+<p>Every Phase 2 model predicts <code>pm25_tomorrow − pm25_today</code> rather than
+<code>pm25_tomorrow</code>, then adds today's value back. This sounds like bookkeeping and is the
+single most consequential decision in the project.</p>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph D["`**Direct** — predict the level`"]
+    D1["`model must learn
+    'tomorrow ≈ today'
+    from scratch, every day`"] --> D2["`Q=0.90 smoke-day MAE
+    **39.650**`"]
+  end
+  subgraph R["`**Residual** — predict the change`"]
+    R1["`persistence is the
+    built-in default;
+    model predicts only
+    the deviation`"] --> R2["`Q=0.90 smoke-day MAE
+    **21.391**`"]
+  end
+  D --> R
+
+  style D2 fill:#f6e2e0,stroke:#d3a5a2,color:#2f2d35
+  style R2 fill:#dfeee4,stroke:#9dc4ad,color:#2f2d35
+</pre>
+</div>
+
+<p>Predicting the level forces the model to spend its capacity relearning autocorrelation it was
+already handed in the lag features. Predicting the change bakes persistence in as the prior and asks
+the model only for the deviation — which is the part that is actually hard. For the Q=0.90 model the
+switch moves smoke-day MAE from <strong>39.650 to 21.391</strong>, a 46% improvement from a two-line
+transformation.</p>
+
+<h3 id="p2-quantile">Quantile regression — buying spike sensitivity</h3>
+
+<div class="note primer">
+<span class="tag">Primer — quantile (pinball) loss</span>
+<p>Ordinary MAE penalises over- and under-prediction equally, so the optimum is the median. Quantile
+loss at level α penalises under-prediction by α and over-prediction by (1 − α). At α = 0.80 missing
+low costs four times as much as missing high, so the model deliberately aims above the median — which
+is what you want when the failure you care about is missing a spike.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Model</th><th class="num">Overall MAE</th><th class="num">Smoke-day MAE</th><th class="num">Normal-day MAE</th><th class="num">Smoke Δ</th></tr></thead>
+<tbody>
+<tr><td>Persistence</td><td class="num">1.668</td><td class="num">22.353</td><td class="num">1.545</td><td class="num">—</td></tr>
+<tr><td>LightGBM MAE (α = 0.50)</td><td class="num win">1.504</td><td class="num">22.181</td><td class="num">1.382</td><td class="num">+0.172</td></tr>
+<tr><td>α = 0.75</td><td class="num">1.852</td><td class="num">21.813</td><td class="num">1.735</td><td class="num">+0.540</td></tr>
+<tr class="best"><td><strong>α = 0.80</strong> (chosen)</td><td class="num">1.995</td><td class="num">21.760</td><td class="num">1.878</td><td class="num">+0.593</td></tr>
+<tr><td>α = 0.90</td><td class="num">2.521</td><td class="num">21.391</td><td class="num">2.410</td><td class="num">+0.962</td></tr>
+<tr><td>α = 0.95</td><td class="num lose">3.061</td><td class="num win">21.228</td><td class="num">2.954</td><td class="num">+1.125</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The trade is perfectly monotone: every increase in α improves smoke-day error and worsens overall
+error. There is no free lunch to find, only a price to choose. α = 0.80 was selected as the balance
+point, though the honest position is that the right α depends on the relative cost of a missed alert
+versus a false one — a number this project never specified.</p>
+
+<h3 id="p2-subset">Fire-only features — less is more, barely</h3>
+<p>If weather features anchor the model to normal-day behaviour, removing them during fire events
+might help. Three feature sets were compared under the α = 0.80 residual model.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Feature set</th><th class="num">Features</th><th class="num">Overall MAE</th><th class="num">Smoke-day MAE</th><th class="num">Smoke Δ</th></tr></thead>
+<tbody>
+<tr><td>Full set</td><td class="num">38</td><td class="num">1.995</td><td class="num">21.760</td><td class="num">+0.593</td></tr>
+<tr><td>Fire + season</td><td class="num">27</td><td class="num">2.067</td><td class="num">21.735</td><td class="num">+0.618</td></tr>
+<tr class="best"><td><strong>Fire-only</strong></td><td class="num">24</td><td class="num">2.075</td><td class="num">21.729</td><td class="num">+0.624</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>This is the project's best smoke-day model: <strong>smoke-day MAE 21.729, beating persistence by
+0.624 µg/m³</strong>. The gain over the full feature set is +0.031 — consistent in direction but
+small, and it should be described as such. "Fire-only" is also a slight misnomer: the set drops
+temperature, humidity, precipitation and pressure but keeps wind, since wind is what carries smoke.</p>
+
+<h3 id="p2-gate">The smoke classifier</h3>
+<p>A parallel line of work asked a simpler question: not <em>how bad</em> will tomorrow be, but
+<em>will tomorrow be a smoke day at all?</em> This is binary classification on a class that occurs
+0.5% of the time.</p>
+
+<div class="note primer">
+<span class="tag">Primer — AUPRC, and why not accuracy</span>
+<p>A classifier that always says "no smoke" is 99.5% accurate and completely useless. Area under the
+precision-recall curve measures how well the model ranks the rare positives above the negatives. Its
+random baseline is the positive rate itself — here 0.006 — so any value meaningfully above that
+carries information.</p>
+</div>
+
+<figure>
+  <img src="assets/smoke_detector_pr_curves.png" alt="Precision-recall curves for three classifiers. XGBoost reaches AP 0.239, BalancedRandomForest 0.147, LightGBM 0.018, against a random baseline of 0.006.">
+  <figcaption><strong>Figure 6.</strong> Pooled out-of-fold precision-recall curves. XGBoost reaches
+  AP = 0.239 against a random baseline of 0.006 — roughly 40× better than chance on a class that
+  occurs one day in two hundred.</figcaption>
+</figure>
+
+<div class="note warn">
+<span class="tag">Two numbers, and which to quote</span>
+<p>The training script reports <strong>AUPRC = 0.331</strong>, which is the <em>mean of five per-fold
+values</em>. Because each fold's test window runs from its cutoff to the end of the data, the windows
+are nested, and the severe post-2017 events get scored in several of them — which pulls the mean up.
+Pooling every out-of-fold prediction into one curve gives <strong>AP = 0.239</strong>, and that is the
+number plotted above. Quote 0.239 as the single-figure result; 0.331 is only meaningful as a per-fold
+mean. The reported F2 of 0.455 carries a separate caveat: its decision threshold is tuned on the same
+fold it is scored on, so it is optimistically biased.</p>
+</div>
+
+<p>Measured by episodes rather than days, the XGBoost gate catches <strong>8 of the 13</strong>
+episodes that fall inside a test window. (Thirteen rather than fourteen because the 2002 event
+predates the first cutoff and so is never tested.) The five misses are individually explicable:</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Missed episode</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>2005-09</td><td>Sparse pre-2010 training data — structural</td></tr>
+<tr><td>2017-08</td><td>Distant fires, mean 350 km; no close-range signal to fire on</td></tr>
+<tr><td>2018-08</td><td>Fast onset — fire activity jumped on day 2, too late to predict day 1</td></tr>
+<tr><td><strong>2020-09</strong></td><td><strong>US-origin fires; BC fire features read zero against PM2.5 of 163</strong></td></tr>
+<tr><td>2023-08</td><td>Single pre-smoke day, 14 µg/m³ today and above 25 tomorrow</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>None of these are random failures, and that matters: failure modes with physical explanations are
+addressable with better data. Four of the five point at the same two fixes — fire data from the US
+Pacific Northwest, and some representation of transport direction.</p>
+
+<h3 id="p2-negative">What did not work</h3>
+<p>Negative results were kept rather than quietly dropped, because in a project whose headline finding
+is "the baseline wins" they carry as much information as the successes.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Attempt</th><th class="num">Smoke Δ</th><th>Why it failed</th></tr></thead>
+<tbody>
+<tr><td>Sample weighting (smoke days × 20)</td><td class="num lose">−0.921</td><td>Taught the model that any elevated day keeps rising; most do not</td></tr>
+<tr><td>Hurdle model (gate + regressor)</td><td class="num lose">−1.2%</td><td>Gate errors compound into the regressor stage</td></tr>
+<tr><td>LSTM (2-layer, 7-day window)</td><td class="num lose">−24% to −27%</td><td>46 positive events is nowhere near enough sequence data</td></tr>
+<tr><td>Custom asymmetric MAE (5× penalty)</td><td class="num">+0.082</td><td>Equivalent to α ≈ 0.83 but less well calibrated than the native objective</td></tr>
+<tr><td>Soft gate blending (raw probabilities)</td><td class="num">+0.137</td><td>Gate probabilities average 0.13 even on real smoke days; the blend barely engages</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The sample-weighting result is the most instructive. Upweighting smoke days seems like the obvious
+response to class imbalance, and it made things <em>worse than persistence</em> — because the model
+generalised "elevated PM2.5 means rising PM2.5" to the many elevated days that never become smoke
+days. The LSTM figure is a range rather than a point because the script sets no random seed; three
+runs gave −27%, −24.4% and −25.1%.</p>
+</section>
+
+<!-- ============ 8. DASHBOARD ============ -->
+<section id="dashboard">
+<h2><span class="num">Chapter 8</span>The dashboard</h2>
+
+<p>The findings are delivered as an interactive Streamlit application — seven tabs, run locally with
+<code>streamlit run app/streamlit_app.py</code>. The merged dataset ships with the repository, so
+nothing needs downloading first. The screenshots below are from a live session.</p>
+
+<figure class="shot">
+  <img src="assets/dash_overview.png" alt="Dashboard Overview tab showing the sidebar with dataset summary and the 25-year PM2.5 time series with smoke events highlighted.">
+  <figcaption><strong>Overview.</strong> The sidebar carries the running summary — 9,133 days, 46
+  smoke days, 14 episodes — beside the full time series with a year-range slider.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/dash_trends.png" alt="Dashboard Smoke Season Trends tab showing annual smoke day counts, fire season mean PM2.5, and a sortable table of smoke episodes.">
+  <figcaption><strong>Smoke Season Trends.</strong> RQ3 made interactive: annual counts beside the
+  fire-season mean, with the 14-episode table below. The contrast between the two charts is the
+  chapter 4 finding in one screen.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/dash_forecasting.png" alt="Dashboard PM2.5 Forecasting tab showing a model comparison table and prediction plots.">
+  <figcaption><strong>PM2.5 Forecasting.</strong> Model comparison with time-series cross-validation,
+  per-model prediction plots, and the ablation study as a bar chart.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/dash_validation.png" alt="Dashboard Model Validation tab showing holdout evaluation results for the 2021 to 2024 test period.">
+  <figcaption><strong>Model Validation.</strong> The 2000–2020 / 2021–2024 holdout, where the tree
+  models turn in negative R² and persistence does not.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="assets/dash_health.png" alt="Dashboard Health and Planning tab showing an air quality category mapping and a smoke day calendar heatmap.">
+  <figcaption><strong>Health &amp; Planning.</strong> BC AQI category mapping, a year-by-month smoke
+  calendar, and an extreme-events timeline — the operational view.</figcaption>
+</figure>
+
+<p>The remaining two tabs are <strong>Smoke Arrival Lag</strong>, which carries the cross-correlation
+figures and a per-episode explorer, and <strong>Data Explorer</strong>, which exposes the full
+9,133 × 90 table with date filtering and CSV export.</p>
+
+<div class="note">
+<span class="tag">Run it yourself</span>
+<p>The app uses the <code>width="stretch"</code> API introduced in Streamlit 1.49 and will raise a
+<code>TypeError</code> on older releases, so <code>requirements.txt</code> pins
+<code>streamlit&gt;=1.49</code>. There is no public deployment.</p>
+</div>
+</section>
+
+<!-- ============ 9. LESSON ============ -->
+<section id="lesson">
+<h2><span class="num">Chapter 9</span>When the record grew</h2>
+
+<p>This chapter exists because a result in this project reversed, and the reversal is more interesting
+than the original finding.</p>
+
+<p>The dataset started as <strong>ten years, 3,654 rows, 2015–2024</strong>. It was later rebuilt to
+<strong>twenty-five years, 9,133 rows, 2000–2024</strong>, and the analyses were re-run. One of the
+things that changed was the weather signature of smoke days.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Claim</th><th class="num">10-year record</th><th class="num">25-year record</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>Lag-1 autocorrelation</td><td class="num">0.8216</td><td class="num">0.8001</td><td>Essentially unchanged</td></tr>
+<tr><td>Smoke days hotter</td><td class="num">+9.16 °C</td><td class="num">+8.97 °C</td><td class="win">Holds, strengthens</td></tr>
+<tr><td>Smoke days drier</td><td class="num">−4.54 mm</td><td class="num">−5.14 mm</td><td class="win">Holds, strengthens</td></tr>
+<tr><td><strong>Smoke days calmer</strong></td><td class="num">−1.46 km/h, p = 0.029</td><td class="num">−0.26 km/h, p = 0.92</td><td class="lose">Does not survive</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>On ten years of data, smoke days were measurably calmer, and the natural reading was a stagnant
+blocking anticyclone — a high-pressure system that simultaneously dries out fuel, drives ignition, and
+traps smoke near the surface under still air. Hot, dry <em>and</em> calm is a coherent meteorological
+story, and it was supported at p = 0.029.</p>
+
+<p>On twenty-five years it disappears. The wind difference shrinks to a quarter of a kilometre per
+hour and the p-value goes to 0.92 — as close to "no effect" as the test can report. The heat and
+dryness signals, meanwhile, got stronger.</p>
+
+<div class="note ok">
+<span class="tag">What to conclude</span>
+<p>The stagnation hypothesis is still consistent with the temperature and precipitation evidence, and
+those are the two strongest signals in the dataset by many orders of magnitude. But it is not
+supported by the wind data, and the current write-up says so. A fifteen-year extension is a far better
+test than the original ten years, and when a marginal p-value at 0.029 evaporates on four times the
+data, the longer record is the one to believe.</p>
+</div>
+
+<p>The wider lesson is about documentation rather than meteorology. When the dataset was rebuilt, the
+notebooks were re-run but one summary document kept its original numbers — which stayed internally
+consistent and quietly stopped matching the data. Every figure in it was correct for the record it was
+written against. This is an ordinary and easily-made failure, and the defence against it is mechanical:
+regenerate prose figures from the artifacts rather than copying them forward, and re-verify claims
+against the data rather than against the previous draft.</p>
+</section>
+
+<!-- ============ 10. LIMITS ============ -->
+<section id="limits">
+<h2><span class="num">Chapter 10</span>Limitations</h2>
+
+<p>The full list lives in <a href="https://github.com/Vermillion-1/Forest-Fire-Prediction-BC/blob/main/existing_issues.md"><code>existing_issues.md</code></a>.
+These are the ones that most affect how the results should be read.</p>
+
+<h3 id="limits-eval">Evaluation</h3>
+<ul>
+<li><strong>The classifier folds are nested.</strong> Test windows run from each cutoff to the end of
+the data rather than between cutoffs, so later events are scored repeatedly. This is why the per-fold
+AUPRC mean (0.331) exceeds the pooled AP (0.239).</li>
+<li><strong>The F2 threshold is tuned on the test fold</strong>, making the reported 0.455
+optimistically biased. AUPRC is threshold-free and unaffected.</li>
+<li><strong>The regression evaluation is sound</strong> — but for a subtle reason. The same nested
+folds are used, yet predictions are overwritten fold by fold, so each day ends up scored by the model
+trained up to the most recent prior cutoff. That is a correct expanding-window evaluation arrived at
+accidentally, and anyone fixing the fold construction must preserve it.</li>
+<li><strong>The trend statistics are not computed by committed code.</strong> All four Spearman
+results reproduce exactly from the dataset, but the analysis that produced them was run outside the
+notebooks in the repository.</li>
+</ul>
+
+<h3 id="limits-data">Data</h3>
+<ul>
+<li><strong>The 2020 ceiling.</strong> The worst event in the record is invisible to the fire
+features. This bounds every fire-based result, not just that episode.</li>
+<li><strong>MODIS → VIIRS is unadjusted.</strong> A sensor discontinuity and a genuine increase in
+fire activity are confounded in every fire feature.</li>
+<li><strong>The station network grew sevenfold</strong>, and the city-wide average is not normalised
+for it.</li>
+<li><strong>Raw data is not committed</strong>, so <code>dataset.csv</code> cannot be re-derived from
+a fresh clone without re-downloading from sources that may have been revised since.</li>
+</ul>
+
+<h3 id="limits-next">What comes next</h3>
+<ol>
+<li><strong>Add US Pacific Northwest fire data.</strong> Highest value by a wide margin — it addresses
+the ceiling that bounds everything else.</li>
+<li><strong>Fix the classifier evaluation</strong> — disjoint folds, threshold selected off the test
+fold, pooled AP as the headline.</li>
+<li><strong>Move to hourly PM2.5</strong>, which is the only way to resolve a transport lag that daily
+data reports as zero.</li>
+<li><strong>Add HYSPLIT back-trajectories</strong> so transport direction becomes a feature instead of
+an inference.</li>
+<li><strong>Commit the trend analysis as code</strong>, and seed the LSTM.</li>
+</ol>
+</section>
+
+<!-- ============ GLOSSARY ============ -->
+<section id="glossary">
+<h2><span class="num">Reference</span>Glossary</h2>
+<dl class="gloss">
+  <dt>Ablation</dt><dd>Removing a feature group and re-measuring, to find its marginal contribution rather than its apparent importance.</dd>
+  <dt>AUPRC / AP</dt><dd>Area under the precision-recall curve. The right metric for rare-event classification; its random baseline is the positive rate.</dd>
+  <dt>Cross-correlation</dt><dd>Correlation between two series at a range of time offsets, used to find the lag at which they align best.</dd>
+  <dt>Expanding window CV</dt><dd>Time-series cross-validation where training data grows and testing always happens on later data, preventing future information leaking backwards.</dd>
+  <dt>F2 score</dt><dd>A precision-recall blend weighting recall four times more heavily than precision — appropriate when a missed alert costs more than a false one.</dd>
+  <dt>FIRMS</dt><dd>NASA's Fire Information for Resource Management System, the source of the satellite fire detections.</dd>
+  <dt>FRP</dt><dd>Fire radiative power in megawatts: how much energy a fire radiates, a proxy for its smoke output.</dd>
+  <dt>HYSPLIT</dt><dd>An atmospheric transport model that traces where an air parcel came from. Named in future work as the way to make transport direction a feature.</dd>
+  <dt>MAE</dt><dd>Mean absolute error, in the units of the target. Here, µg/m³ of PM2.5.</dd>
+  <dt>MODIS / VIIRS</dt><dd>Two satellite instruments for fire detection. VIIRS (2012 onward) resolves at 375 m against MODIS's 1 km.</dd>
+  <dt>Non-stationarity</dt><dd>When the statistical relationship being modelled changes over time, so a model fitted on one period degrades on the next.</dd>
+  <dt>Persistence baseline</dt><dd>Predicting that tomorrow equals today. Trivial, and in this project unbeaten on overall error.</dd>
+  <dt>PM2.5</dt><dd>Airborne particles under 2.5 µm across, measured in µg/m³. The target variable.</dd>
+  <dt>Quantile (pinball) loss</dt><dd>An asymmetric loss that penalises under- and over-prediction differently, aiming the model at a chosen quantile rather than the median.</dd>
+  <dt>R²</dt><dd>Fraction of variance explained. Zero means no better than predicting the mean; negative means worse.</dd>
+  <dt>Residual framing</dt><dd>Predicting the change from today rather than tomorrow's level, which builds the persistence baseline in as the model's default.</dd>
+  <dt>scale_pos_weight</dt><dd>A gradient-boosting parameter that upweights the minority class during training. Used here instead of synthetic oversampling.</dd>
+  <dt>Smoke day</dt><dd>Any day with a city-wide mean PM2.5 above 25 µg/m³. There are 46 in 25 years.</dd>
+  <dt>Smoke episode</dt><dd>One or more consecutive smoke days treated as a single event. There are 14.</dd>
+  <dt>Spearman's ρ</dt><dd>A rank correlation testing for monotone trend without assuming normality or linearity.</dd>
+  <dt>U / V wind components</dt><dd>Wind decomposed into eastward and northward parts, avoiding the discontinuity at 0°/360°.</dd>
+</dl>
+</section>
+
+<footer>
+  <p><strong>Vancouver Wildfire Smoke Predictor</strong> — a group project for CMPT 733: Big Data
+  Lab II at Simon Fraser University. Data from the BC Ministry of Environment, NASA FIRMS and
+  Open-Meteo.</p>
+  <p>
+    <a href="https://github.com/Vermillion-1/Forest-Fire-Prediction-BC">Repository</a> ·
+    <a href="https://github.com/Vermillion-1/Forest-Fire-Prediction-BC/blob/main/docs/report_final.md">Full report</a> ·
+    <a href="https://github.com/Vermillion-1/Forest-Fire-Prediction-BC/blob/main/docs/experiment_results.md">Experiment results</a> ·
+    <a href="https://github.com/Vermillion-1/Forest-Fire-Prediction-BC/blob/main/existing_issues.md">Known limitations</a>
+  </p>
+</footer>
+
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function(){
+  const root=document.documentElement;
+  const stored=localStorage.getItem('ffbc-theme');
+  if(stored) root.setAttribute('data-theme',stored);
+
+  function isDark(){
+    const t=root.getAttribute('data-theme');
+    if(t) return t==='dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function renderMermaid(){
+    const dark=isDark();
+    document.querySelectorAll('.mermaid').forEach(function(el){
+      if(el.dataset.src) el.innerHTML=el.dataset.src;
+      else el.dataset.src=el.innerHTML;
+      el.removeAttribute('data-processed');
+    });
+    mermaid.initialize({
+      startOnLoad:false,
+      theme: dark?'dark':'base',
+      markdownAutoWrap:false,
+      flowchart:{curve:'basis', htmlLabels:true, padding:14, nodeSpacing:44, rankSpacing:52},
+      themeVariables: dark?{
+        background:'#21232a', primaryColor:'#26313b', primaryTextColor:'#e6e3dd',
+        primaryBorderColor:'#4a6274', lineColor:'#7b8794', textColor:'#e6e3dd',
+        clusterBkg:'#1f2027', clusterBorder:'#33353f', fontSize:'14px'
+      }:{
+        background:'#fffdfa', primaryColor:'#dfe9f1', primaryTextColor:'#2f2d35',
+        primaryBorderColor:'#a9c2d3', lineColor:'#918d9c', textColor:'#2f2d35',
+        clusterBkg:'#fdfbf8', clusterBorder:'#e9e1d6', fontSize:'14px'
+      }
+    });
+    mermaid.run({querySelector:'.mermaid'});
+  }
+
+  document.getElementById('themebtn').addEventListener('click',function(){
+    const next=isDark()?'light':'dark';
+    root.setAttribute('data-theme',next);
+    localStorage.setItem('ffbc-theme',next);
+    renderMermaid();
+  });
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){
+    if(!root.getAttribute('data-theme')) renderMermaid();
+  });
+
+  renderMermaid();
+
+  // scroll spy
+  const links=Array.from(document.querySelectorAll('nav.side a[href^="#"]'));
+  const map=new Map();
+  links.forEach(function(a){
+    const el=document.getElementById(a.getAttribute('href').slice(1));
+    if(el) map.set(el,a);
+  });
+  const obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){l.classList.remove('active');});
+        const a=map.get(e.target);
+        if(a){
+          a.classList.add('active');
+          const parentli=a.closest('ol ol')?a.closest('li').parentElement.closest('li'):null;
+          if(parentli){const t=parentli.querySelector('a.top'); if(t) t.classList.add('active');}
+        }
+      }
+    });
+  },{rootMargin:'-8% 0px -80% 0px', threshold:0});
+  map.forEach(function(a,el){obs.observe(el);});
+  document.querySelectorAll('section h3[id]').forEach(function(h){
+    if(map.has(h)) return;
+    const a=links.find(function(l){return l.getAttribute('href')==='#'+h.id;});
+    if(a){map.set(h,a); obs.observe(h);}
+  });
+})();
+</script>
+</body>
+</html>

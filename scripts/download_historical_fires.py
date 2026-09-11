@@ -21,8 +21,8 @@ from tqdm import tqdm
 
 # CONFIGURATION
 # =============
-# NASA FIRMS API key (for future use with real-time API)
-FIRMS_API_KEY = "334480ce6c3ae25635f5443f42ab39bd"
+# Note: the historical archive endpoints used below are public and need no API key.
+# A key is only required for the real-time FIRMS API, which this script does not call.
 
 # Project root and output directories
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

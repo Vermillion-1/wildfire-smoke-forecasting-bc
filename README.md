@@ -4,6 +4,9 @@
 
 CMPT 733: Big Data Lab II | Simon Fraser University
 
+📖 **[Read the full technical documentation →](https://vermillion-1.github.io/Forest-Fire-Prediction-BC/)**  
+<sub>Data pipeline, feature engineering, all three research questions, the modelling experiments and known limitations — with diagrams and dashboard screenshots.</sub>
+
 ---
 
 ## Overview
@@ -83,7 +86,7 @@ This project integrates daily PM2.5 air quality measurements, NASA MODIS/VIIRS s
 | NASA FIRMS VIIRS | 2012–2024 | Active fire detections (Canada) |
 | Open-Meteo Historical API | 2000–2025 | Daily weather for Vancouver (49.25°N, 123.12°W) |
 
-The final merged dataset is **9,133 rows × 90 columns**, covering 2000-01-01 to 2025-01-01 with zero missing days.
+The final merged dataset is **9,133 rows × 90 columns**, covering 2000-01-01 to 2025-01-01 with zero missing days. Modeling uses **9,125** of those rows: the first 7 are consumed by the lag-7 warm-up and the last has no next-day target.
 
 ---
 
@@ -129,7 +132,7 @@ python scripts/train_asymmetric_loss.py      # Q=0.80 key result
 python scripts/train_fire_subset.py          # Best smoke-day model
 
 # Smoke classifier
-python scripts/train_smoke_detector.py       # XGBoost gate, AUPRC=0.331
+python scripts/train_smoke_detector.py       # XGBoost gate, fold-mean AUPRC=0.331
 
 # Architecture experiments
 python scripts/train_residual_correction.py
@@ -154,7 +157,7 @@ python scripts/tune_residual_model.py        # requires optuna
 | Random Forest (best ML) | 1.783 | 0.165 |
 | LightGBM (Tuned) | 1.845 | 0.146 |
 
-Persistence beats every ML model overall. The dominant signal is PM2.5 lag-1 (~40% feature importance, r = 0.82). Removing fire features *improves* the standard model (MAE 1.793 → 1.750).
+Persistence beats every ML model overall. The dominant signal is PM2.5 lag-1 (~40% feature importance, r = 0.80). Removing fire features *improves* the standard model (MAE 1.793 → 1.750).
 
 **Phase 2 — Smoke-day specialisation (vs persistence smoke-day MAE = 22.353):**
 
@@ -163,12 +166,12 @@ Persistence beats every ML model overall. The dominant signal is PM2.5 lag-1 (~4
 | Persistence | 1.668 | 22.353 | — |
 | LightGBM MAE (residual framing) | 1.504 | 22.181 | +0.172 |
 | **Q=0.80 fire-only (best smoke-day)** | **2.075** | **21.729** | **+0.624** |
-| XGBoost smoke classifier | AUPRC=0.331 | 8/13 episodes | — |
+| XGBoost smoke classifier | AUPRC=0.331 (fold mean) | 8/13 episodes | — |
 
 Residual framing (predicting the change, not raw PM2.5) is the single most important architectural choice. Quantile regression at Q=0.80 with fire-only features beats persistence on the 46 smoke days while remaining interpretable and deployable.
 
 ![Smoke day classifier precision-recall curves](figures/smoke_detector_pr_curves.png)
-*Precision-recall curves for Phase 2 binary smoke-day classifiers. AUPRC = 0.331 vs. a random baseline of ~0.005 — a 66x improvement despite only 0.5% positive class rate.*
+*Precision-recall curves for Phase 2 binary smoke-day classifiers. Pooled out-of-fold AP = 0.239 against a random baseline of 0.006 — a ~40x improvement despite a 0.5% positive class rate. The mean per-fold AUPRC, 0.331, is higher because the expanding-window folds overlap and the severe post-2017 events fall in several test windows.*
 
 ### RQ2 — Smoke Arrival Lag
 
@@ -179,7 +182,7 @@ Cross-correlation peaks at **lag 0** across all distance bands, indicating smoke
 Over 2000–2024: **46 smoke days** across **14 episodes**. Spearman trend tests show statistically significant upward trends in:
 - Smoke day frequency (ρ = 0.480, p = 0.015)
 - Peak episode severity (ρ = 0.648, p = 0.043)
-- Episode duration (ρ = 0.483, p = 0.015)
+- Episode duration, measured as the longest episode each year (ρ = 0.483, p = 0.015)
 
 The worst event (September 2020, peak PM2.5 = 163.5 µg/m³) originated from Oregon/Washington fires — the XGBoost gate assigns zero fire activity on this day (`fire_count_total = 0`), confirming this is a data ceiling, not a model ceiling.
 
@@ -211,6 +214,7 @@ The interactive dashboard (`app/streamlit_app.py`) provides 7 tabs:
 | [`docs/report_final.md`](docs/report_final.md) | Full academic report covering Phase 1 and Phase 2 |
 | [`docs/experiment_results.md`](docs/experiment_results.md) | Detailed results for all 9 Phase 2 experiments |
 | [`docs/modeling_summary.md`](docs/modeling_summary.md) | Concise Phase 2 modeling summary |
+| [`existing_issues.md`](existing_issues.md) | Known limitations and roadmap |
 
 ---
 

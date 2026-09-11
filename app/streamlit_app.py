@@ -338,7 +338,7 @@ with st.sidebar:
     st.markdown(
         "**Data sources**\n"
         "- PM2.5: BC Gov FTP\n"
-        "- Fires: NASA FIRMS VIIRS\n"
+        "- Fires: NASA FIRMS MODIS + VIIRS\n"
         "- Weather: Open-Meteo\n"
     )
 
@@ -465,7 +465,7 @@ with tab1:
 with tab2:
     st.header("RQ3: Seasonal Risk Profiling")
     st.markdown(
-        "**How has Vancouver's wildfire smoke season changed from 2015 to 2025?** "
+        "**How has Vancouver's wildfire smoke season changed from 2000 to 2024?** "
         "Are smoke events becoming more frequent, longer, or more intense?"
     )
 
@@ -707,7 +707,7 @@ with tab4:
     else:
         st.info(
             "**Key finding:** The persistence baseline (tomorrow = today) remains competitive. "
-            "PM2.5 is highly autocorrelated (lag-1 r = 0.82), making 'tomorrow ~ today' a strong heuristic. "
+            "PM2.5 is highly autocorrelated (lag-1 r = 0.80), making 'tomorrow ~ today' a strong heuristic. "
             "Advanced models provide marginal improvements but better capture extreme smoke events."
         )
 
@@ -828,7 +828,7 @@ with tab5:
     # Holdout training function
     @st.cache_data(show_spinner=False)
     def train_holdout_models(_df):
-        """Train models on 2015-2020, evaluate on 2021-2024."""
+        """Train models on 2000-2020, evaluate on 2021-2024."""
         mdf = _df.copy()
         mdf["pm25_target"] = mdf["pm25"].shift(-1)
         mdf = mdf.dropna(subset=["pm25_target"] + FEATURE_COLS)
@@ -894,7 +894,7 @@ with tab5:
     # Summary metrics
     st.subheader("Holdout Split Summary")
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Training Samples", f"{n_train:,}", "2015-2020")
+    col1.metric("Training Samples", f"{n_train:,}", "2000-2020")
     col2.metric("Test Samples", f"{n_test:,}", "2021-2024")
     col3.metric("Best Model", ho_results.index[0])
     col4.metric("Best MAE", f"{ho_results.iloc[0]['MAE']:.2f} µg/m³")

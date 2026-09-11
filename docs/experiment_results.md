@@ -13,7 +13,7 @@ Standard regression models trained to minimise MAE learn to predict near the **m
 
 ## Evaluation Setup
 
-- **Dataset:** 9,125 modeling rows (2000–2024), city-level Vancouver daily dataset
+- **Dataset:** 9,125 modeling rows (2000–2024), city-level Vancouver daily dataset — the merged file holds 9,133 days; 7 are consumed by the lag-7 warm-up and 1 has no next-day target
 - **Smoke days (PM2.5 > 25):** 46 total — 0.50% of data
 - **CV method:** expanding-window, 5 folds with cutoffs 2004/2008/2012/2016/2020 (no data leakage)
 - **Primary metrics:**
@@ -55,7 +55,7 @@ LightGBM's quantile (pinball) loss with alpha > 0.5 penalises under-prediction m
 
 **Finding:** The tradeoff is perfectly monotone — higher alpha always improves smoke-day MAE and always worsens overall MAE. There is no free lunch. The relationship is near-linear: each 0.05 step in alpha costs ~0.3–0.5 overall MAE and buys ~0.2–0.3 smoke-day improvement.
 
-**q=0.80 is the best balanced choice** — it pushes the model toward risk-averse predictions (75th percentile of next-day change) without completely sacrificing daily forecast accuracy.
+**q=0.80 is the best balanced choice** — it pushes the model toward risk-averse predictions (80th percentile of next-day change, i.e. under-prediction penalised 4x more than over-prediction) without completely sacrificing daily forecast accuracy.
 
 ---
 
@@ -147,7 +147,9 @@ Architecture: 2-layer LSTM, hidden=64, window=7 days, 30 epochs.
 | Model | Overall MAE | vs Persistence |
 |---|---|---|
 | Persistence | 1.842 (test set) | — |
-| LSTM | 2.342 | −27% worse |
+| LSTM | 2.29–2.34 | −24% to −27% worse |
+
+`train_lstm.py` sets no random seed, so this figure moves between runs: three executions gave 2.342, 2.292 and 2.305 (−27%, −24.4%, −25.1%). The conclusion is stable, the third decimal is not.
 
 **Finding — LSTM cannot beat persistence on this dataset.** 9,125 rows is insufficient for a sequence model to generalise. With only 46 positive smoke events, the LSTM never sees enough smoke during training to learn the pattern. The temporal dependencies (lag autocorrelation) are already captured by the lag features handed to tree models — there is no sequential structure left for LSTM to exploit.
 
@@ -161,11 +163,15 @@ Models tested: XGBoost, LightGBM, BalancedRandomForest — all with imbalance ha
 
 | Model | AUPRC | OOF Episode Recall | F2 Score |
 |---|---|---|---|
-| LightGBM | 0.072 | 0/13 (0%) | 0.08 |
+| LightGBM | 0.072 | not computed | 0.08 |
 | BalancedRandomForest | 0.210 | — | 0.34 |
 | **XGBoost** | **0.331** | **8/13 (62%)** | **0.46** |
 
-**Finding — XGBoost catches 8 of 13 unique smoke episodes** in the OOF test windows. It is the only model with meaningful precision-recall performance on this task.
+**Finding — XGBoost catches 8 of 13 unique smoke episodes** in the OOF test windows (`analyze_missed_episodes.py`). The dataset holds 14 episodes in total; the 2002 event predates the first CV cutoff and so never appears in a test window. It is the only model with meaningful precision-recall performance on this task.
+
+**Caveat on AUPRC.** The 0.331 figure is the *mean of five per-fold AUPRCs* (`train_smoke_detector.py:300`). Because each fold's test window runs from its cutoff to the end of the data, the windows are nested and the severe post-2017 events are scored repeatedly. Pooling every out-of-fold prediction into one curve — what `figures/smoke_detector_pr_curves.png` plots — gives AP = 0.239. Quote 0.239 as the single-number result and 0.331 only as the per-fold mean.
+
+**Caveat on F2.** The decision threshold is chosen by maximising F2 on the same test fold it is scored on (`train_smoke_detector.py:270-272`), so the reported F2 of 0.455 is optimistically biased. AUPRC is threshold-free and unaffected.
 
 **Finding — LightGBM fails completely at classification** despite outperforming XGBoost on regression. The scale_pos_weight mechanism interacts differently with LightGBM's leaf-splitting strategy — it essentially ignores the class imbalance adjustment.
 
@@ -229,16 +235,3 @@ Not random noise — each miss has a physical explanation: out-of-province trans
 The key predictive signal — fire FRP × wind direction → smoke transport — is a multiplicative interaction between two features. A single tree split captures this exactly. LSTM needs to learn it implicitly through weight products across time steps with 46 positive training examples. This is why gradient-boosted trees beat everything else here.
 
 ---
-
-## Remaining Tasks
-
-Modelling is complete. Remaining tasks ordered by deadline:
-
-| Task | Priority | Deadline | Notes |
-|---|---|---|---|
-| Update `speaking_notes.md` (Slides 8, 9 + Q&A) | **CRITICAL** | Before April 7 | RQ1 finding needs new framing — quantile regression + XGBoost gate missing |
-| Commit all untracked scripts | HIGH | Before April 7 | 10+ scripts in `scripts/` untracked |
-| Update `report_final.md` (expand Section 5 RQ1 + Section 8) | HIGH | With code submission | Entire follow-up modeling phase absent from report |
-| `app/streamlit_app.py` smoke alert | MEDIUM | — | Add XGBoost gate probability to app |
-| `notebooks/05_regime_modeling.ipynb` | LOW | — | Present results in notebook format |
-| Phase-shift visualisation (Sept 2020) | LOW | — | Plot showing quantile model detects rising trend before persistence |
